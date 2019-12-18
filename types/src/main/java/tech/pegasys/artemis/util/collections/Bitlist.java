@@ -1,17 +1,17 @@
 package tech.pegasys.artemis.util.collections;
 
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
+
 import com.google.common.base.Objects;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.bytes.DelegatingBytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 
 public class Bitlist extends DelegatingBytesValue {
   private final int size;
@@ -172,6 +172,12 @@ public class Bitlist extends DelegatingBytesValue {
     }
 
     return new Bitlist(size, mutableBytes.copy(), maxSize());
+  }
+
+  public BitSet toBitSet() {
+    byte[] bytes = new byte[this.byteSize()];
+    System.arraycopy(this.getArrayUnsafe(), 0, bytes, 0, this.byteSize());
+    return BitSet.valueOf(bytes);
   }
 
   @Override

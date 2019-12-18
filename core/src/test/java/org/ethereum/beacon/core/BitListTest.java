@@ -1,6 +1,7 @@
 package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
+import java.util.BitSet;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.crypto.Hashes;
@@ -14,6 +15,7 @@ import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class BitListTest {
 
@@ -184,5 +186,20 @@ public class BitListTest {
     System.out.println(bytes);
 
     assertEquals("0x8374d43e309c1ddbb738b29988f6147a971e66922780bb70e7afb3c6612f76bd", bytes.toString());
+  }
+
+  @Test
+  public void convertToBitSet() {
+    Bitlist bitlist = Bitlist.of(23, BytesValue.wrap(new byte[3]), 32);
+    assertTrue(bitlist.toBitSet().isEmpty());
+
+    Bitlist actual = bitlist.setBit(3, 1);
+    BitSet expected = new BitSet();
+    expected.set(3);
+    assertEquals(expected, actual.toBitSet());
+
+    actual = actual.setBit(17, 1);
+    expected.set(17);
+    assertEquals(expected, actual.toBitSet());
   }
 }

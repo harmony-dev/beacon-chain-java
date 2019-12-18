@@ -27,8 +27,11 @@ import org.ethereum.beacon.consensus.spec.ForkChoice.LatestMessage;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -67,7 +70,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private Cache<BeaconBlock, BeaconTupleDetails> tupleDetails = new LRUCache<>(MAX_TUPLE_CACHE_SIZE);
 
   private final List<Attestation> attestationBuffer = new ArrayList<>();
-  private final Map<Pair<ValidatorIndex, EpochNumber>, Attestation> attestationCache = new HashMap<>();
+
+  private final Map<Pair<ValidatorIndex, EpochNumber>, Attestation> offChainAttestations = new HashMap<>();
+  private final Map<ValidatorIndex, LatestMessage> latestMessages = new HashMap<>();
   private final Schedulers schedulers;
 
   private final SimpleProcessor<BeaconChainHead> headStream;
@@ -152,17 +157,46 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
     List<Attestation> attestations = drainAttestations(spec.get_current_epoch(latestState));
     for (Attestation attestation : attestations) {
+      try {
+        BeaconTuple tuple = tupleStorage.get(attestation.getData().getTarget().getRoot()).get();
 
-      List<ValidatorIndex> participants =
-          spec.get_attesting_indices(
-              latestState, attestation.getData(), attestation.getAggregationBits());
+        MutableBeaconState mutableState = tuple.getState().createMutableCopy();
+        spec.process_slots(
+            mutableState,
+            spec.compute_start_slot_at_epoch(attestation.getData().getTarget().getEpoch()));
+        BeaconState refState = mutableState.createImmutable();
+        IndexedAttestation indexed_attestation =
+            spec.get_indexed_attestation(refState, attestation);
+        if (!spec.is_valid_indexed_attestation(refState, indexed_attestation)) {
+          continue;
+        }
 
-      participants.forEach(index -> addValidatorAttestation(index, attestation));
+        List<ValidatorIndex> participants =
+            spec.get_attesting_indices(
+                refState, attestation.getData(), attestation.getAggregationBits());
+
+        participants.forEach(index -> addValidatorAttestation(index, attestation));
+      } catch (RuntimeException e) {
+        continue;
+      }
+    }
+    if (attestations.size() > 0) {
+      updateHead(latestState);
     }
   }
 
   private synchronized void addValidatorAttestation(ValidatorIndex index, Attestation attestation) {
-    attestationCache.put(Pair.with(index, attestation.getData().getTarget().getEpoch()), attestation);
+    updateLatestMessages(index, attestation.getData());
+    offChainAttestations.put(
+        Pair.with(index, attestation.getData().getTarget().getEpoch()), attestation);
+  }
+
+  private void updateLatestMessages(ValidatorIndex index, AttestationData data) {
+    EpochNumber targetEpoch = data.getTarget().getEpoch();
+    if (!latestMessages.containsKey(index)
+        || targetEpoch.greater(latestMessages.get(index).getEpoch())) {
+      latestMessages.put(index, new LatestMessage(targetEpoch, data.getBeaconBlockRoot()));
+    }
   }
 
   private synchronized void onNewAttestation(Attestation attestation) {
@@ -205,27 +239,32 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       EpochNumber targetEpoch = pendingAttestation.getData().getTarget().getEpoch();
       participants.forEach(
           index -> {
+            updateLatestMessages(index, pendingAttestation.getData());
             removeValidatorAttestation(index, targetEpoch);
           });
     }
   }
 
   private synchronized void removeValidatorAttestation(ValidatorIndex index, EpochNumber epoch) {
-    attestationCache.remove(Pair.with(index, epoch));
+    offChainAttestations.remove(Pair.with(index, epoch));
   }
 
   /** Purges all entries for epochs before  {@code targetEpoch}*/
   private synchronized void purgeAttestations(EpochNumber targetEpoch) {
-    attestationCache.entrySet()
+    offChainAttestations.entrySet()
         .removeIf(entry -> entry.getValue().getData().getTarget().getEpoch().less(targetEpoch));
   }
 
-  private synchronized Map<ValidatorIndex, List<Attestation>> copyAttestationCache() {
-    return attestationCache.entrySet().stream()
+  private synchronized Map<ValidatorIndex, List<Attestation>> copyOffChainAttestations() {
+    return offChainAttestations.entrySet().stream()
         .collect(
             Collectors.groupingBy(
                 e -> e.getKey().getValue0(),
                 Collectors.mapping(Entry::getValue, Collectors.toList())));
+  }
+
+  private synchronized Map<ValidatorIndex, LatestMessage> copyLatestMessages() {
+    return new HashMap<>(latestMessages);
   }
 
   private BeaconTupleDetails head;
@@ -271,7 +310,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       }
     }
 
-    updateCurrentObservableState(head, newSlot);
+    updateHead(latestState);
+    if (newSlot.greater(latestState.getSlot())) {
+      updateCurrentObservableState(head, newSlot);
+    }
   }
 
   private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
@@ -292,11 +334,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         stateUponASlot = emptySlotTransition.apply(head.getFinalState(), slot);
       }
       latestState = stateUponASlot;
-      PendingOperations pendingOperations = getPendingOperations(stateUponASlot, copyAttestationCache());
+      PendingOperations pendingOperations = getPendingOperations(stateUponASlot, copyOffChainAttestations());
       observableStateStream.onNext(
           new ObservableBeaconState(head.getBlock(), stateUponASlot, pendingOperations));
     } else {
-      PendingOperations pendingOperations = getPendingOperations(head.getFinalState(), copyAttestationCache());
+      PendingOperations pendingOperations = getPendingOperations(head.getFinalState(), copyOffChainAttestations());
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
         observableStateStream.onNext(new ObservableBeaconState(
@@ -328,20 +370,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void updateHead(BeaconState state) {
-    Map<ValidatorIndex, List<Attestation>> attestationCacheCopy = copyAttestationCache();
+    Map<ValidatorIndex, LatestMessage> latestMessagesCopy = copyLatestMessages();
     BeaconBlock newHead =
         headFunction.getHead(
-            validatorIndex -> {
-              List<Attestation> validatorAttestations =
-                  attestationCacheCopy.getOrDefault(validatorIndex, Collections.emptyList());
-
-              return validatorAttestations.stream()
-                  .max(Comparator.comparing(attestation -> attestation.getData().getTarget().getEpoch()))
-                  .flatMap(a -> Optional.of(
-                      new LatestMessage(
-                          spec.compute_epoch_at_slot(a.getData().getSlot()),
-                          a.getData().getBeaconBlockRoot())));
-            });
+            validatorIndex ->
+                Optional.ofNullable(latestMessagesCopy.getOrDefault(validatorIndex, null)));
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old
     }

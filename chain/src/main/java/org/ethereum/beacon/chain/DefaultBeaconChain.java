@@ -115,6 +115,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     long s = System.nanoTime();
 
+    Hash32 finalizedRoot = chainStorage.getFinalizedStorage().get().get().getRoot();
+    SlotNumber finalizedSlot = chainStorage.getBlockStorage().get(finalizedRoot).get().getSlot();
+    Hash32 finalizedAncestor = getAncestor(spec.signing_root(block), block, finalizedSlot);
+    if (!finalizedAncestor.equals(finalizedRoot)) {
+      return ImportResult.ExpiredBlock;
+    }
+
     BeaconStateEx parentState = pullParentState(block);
 
     BeaconStateEx preBlockState = preBlockTransition.apply(parentState, block.getSlot());
@@ -240,10 +247,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
    * @return true if block should be rejected, false otherwise.
    */
   private boolean rejectedByTime(BeaconBlock block) {
-    SlotNumber nextToCurrentSlot =
-        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime()).increment();
-
-    return block.getSlot().greater(nextToCurrentSlot);
+    SlotNumber currentSlot =
+        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime());
+    return block.getSlot().greater(currentSlot);
   }
 
   @Override

@@ -32,6 +32,10 @@
       <AppenderRef ref="Console"/>
     </Logger>
 
+    <Logger name="chain" level="error" additivity="true">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
     <Root level="info">
       <AppenderRef ref="validatorFile"/>
       <AppenderRef ref="allFile"/>

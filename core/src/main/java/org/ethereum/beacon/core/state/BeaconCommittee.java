@@ -51,6 +51,6 @@ public class BeaconCommittee {
 
   @Override
   public String toString() {
-    return "ShardCommittee[" + index + ": " + committee + "]";
+    return "BeaconCommittee[" + index + ": " + committee + "]";
   }
 }
