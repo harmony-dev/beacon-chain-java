@@ -34,6 +34,7 @@ import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.spec.ForkChoice;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
@@ -478,5 +479,9 @@ public class Launcher {
 
   public MeasurementsCollector getBlockCollector() {
     return blockCollector;
+  }
+
+  public ForkChoice.Store getStore() {
+    return store;
   }
 }
