@@ -2,6 +2,7 @@ package org.ethereum.beacon.test.type.state.field;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BlockData;
@@ -13,7 +14,7 @@ import java.util.function.Function;
 import static org.ethereum.beacon.test.StateTestUtils.parseBlockData;
 
 public interface BlocksField extends DataMapperAccessor {
-  default List<BeaconBlock> getBlocks(SpecConstants constants) {
+  default List<SignedBeaconBlock> getBlocks(SpecConstants constants) {
     final Function<Integer, String> blockKey =
         useSszWhenPossible()
             ? (n) -> String.format("blocks_%d.ssz", n)
@@ -21,7 +22,7 @@ public interface BlocksField extends DataMapperAccessor {
     final String metaKey = "meta.yaml";
     try {
       if (getFiles().containsKey(metaKey)) {
-        List<BeaconBlock> blocks = new ArrayList<>();
+        List<SignedBeaconBlock> blocks = new ArrayList<>();
         Integer blocksCount =
             getMapper()
                 .readValue(getFiles().get(metaKey).extractArray(), MetaClass.class)
@@ -30,7 +31,7 @@ public interface BlocksField extends DataMapperAccessor {
           // SSZ
           if (useSszWhenPossible()) {
             blocks.add(
-                getSszSerializer().decode(getFiles().get(blockKey.apply(i)), BeaconBlock.class));
+                getSszSerializer().decode(getFiles().get(blockKey.apply(i)), SignedBeaconBlock.class));
           } else { // YAML
             BlockData blockData =
                 getMapper()

@@ -1,6 +1,7 @@
 package org.ethereum.beacon.wire.sync;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
@@ -10,13 +11,13 @@ import reactor.core.Disposable;
 // TODO: revisit and complete this interface
 public interface SyncManager {
 
-  Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks);
+  Disposable subscribeToOnlineBlocks(Publisher<Feedback<SignedBeaconBlock>> onlineBlocks);
 
-  Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks);
+  Disposable subscribeToFinalizedBlocks(Publisher<SignedBeaconBlock> finalBlocks);
 
   void setSyncApi(WireApiSync syncApi);
 
-  Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport();
+  Publisher<Feedback<SignedBeaconBlock>> getBlocksReadyToImport();
 
   void start();
 

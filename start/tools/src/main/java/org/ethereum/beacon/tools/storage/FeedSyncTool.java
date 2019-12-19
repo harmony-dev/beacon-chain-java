@@ -18,6 +18,7 @@ import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -169,8 +170,8 @@ public class FeedSyncTool implements Runnable {
     for (File f : files) {
       System.out.print("importing " + f);
       try {
-        BeaconBlock block = ssz.getDeserializer(BeaconBlock.class).apply(readFile(f));
-        SlotNumber slot = block.getSlot();
+        SignedBeaconBlock block = ssz.getDeserializer(SignedBeaconBlock.class).apply(readFile(f));
+        SlotNumber slot = block.getMessage().getSlot();
 
         Time t = spec.get_slot_start_time(beaconChain.getRecentlyProcessed().getState(), slot);
         controlledSchedulers.setCurrentTime(t.getValue() * 1000 + 1);

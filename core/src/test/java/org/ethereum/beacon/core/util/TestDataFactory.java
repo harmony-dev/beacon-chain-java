@@ -9,6 +9,9 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
@@ -110,7 +113,7 @@ public class TestDataFactory {
   }
 
   public VoluntaryExit createExit() {
-    VoluntaryExit voluntaryExit = new VoluntaryExit(EpochNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
+    VoluntaryExit voluntaryExit = new VoluntaryExit(EpochNumber.of(123), ValidatorIndex.MAX);
 
     return voluntaryExit;
   }
@@ -119,8 +122,8 @@ public class TestDataFactory {
     ProposerSlashing proposerSlashing =
         new ProposerSlashing(
             ValidatorIndex.MAX,
-            BeaconBlockTestUtil.createRandomHeader(random),
-            BeaconBlockTestUtil.createRandomHeader(random));
+            new SignedBeaconBlockHeader(BeaconBlockTestUtil.createRandomHeader(random), BLSSignature.wrap(Bytes96.random(random))),
+            new SignedBeaconBlockHeader(BeaconBlockTestUtil.createRandomHeader(random), BLSSignature.wrap(Bytes96.random(random))));
 
     return proposerSlashing;
   }
@@ -137,8 +140,8 @@ public class TestDataFactory {
     List<Deposit> deposits = new ArrayList<>();
     deposits.add(createDeposit1());
     deposits.add(createDeposit2());
-    List<VoluntaryExit> voluntaryExits = new ArrayList<>();
-    voluntaryExits.add(createExit());
+    List<SignedVoluntaryExit> voluntaryExits = new ArrayList<>();
+    voluntaryExits.add(new SignedVoluntaryExit(createExit(), BLSSignature.wrap(Bytes96.random(random))));
     BeaconBlockBody beaconBlockBody =
         new BeaconBlockBody(
             BLSSignature.ZERO,
@@ -173,14 +176,21 @@ public class TestDataFactory {
     return createBeaconBlock(BytesValue.fromHexString("aa"));
   }
 
+  public SignedBeaconBlock createSignedBeaconBlock() {
+    return createSignedBeaconBlock(BytesValue.fromHexString("aa"));
+  }
+
+  public SignedBeaconBlock createSignedBeaconBlock(BytesValue someValue) {
+    return new SignedBeaconBlock(createBeaconBlock(someValue), BLSSignature.ZERO);
+  }
+
   public BeaconBlock createBeaconBlock(BytesValue someValue) {
     BeaconBlock beaconBlock =
         new BeaconBlock(
             SlotNumber.castFrom(UInt64.MAX_VALUE),
             Hashes.sha256(someValue),
             Hashes.sha256(BytesValue.fromHexString("bb")),
-            createBeaconBlockBody(),
-            BLSSignature.wrap(Bytes96.fromHexString("aa")));
+            createBeaconBlockBody());
 
     return beaconBlock;
   }

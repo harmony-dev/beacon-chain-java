@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.hasher;
 
-import java.util.List;
 import java.util.function.Function;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
@@ -49,15 +48,6 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
       return ((Hashable<Hash32>) input).getHash(hasher);
     } else {
       return hasher.apply(input);
-    }
-  }
-
-  @Override
-  public Hash32 getHashTruncateLast(Object input) {
-    if (input instanceof List) {
-      throw new RuntimeException("Lists are not supported in truncated hash");
-    } else {
-      return Hash32.wrap(Bytes32.wrap(sszHasher.hashTruncateLast(input, input.getClass())));
     }
   }
 }

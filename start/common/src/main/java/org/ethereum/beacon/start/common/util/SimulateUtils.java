@@ -3,6 +3,7 @@ package org.ethereum.beacon.start.common.util;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositMessage;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -72,11 +73,12 @@ public class SimulateUtils {
             withdrawalCredentials,
             initBalance,
             BLSSignature.wrap(Bytes96.ZERO));
+    DepositMessage depositMessage = DepositMessage.from(depositDataWithoutSignature);
 
     BLSSignature signature = BLSSignature.ZERO;
 
     if (isProofVerifyEnabled) {
-      Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
+      Hash32 msgHash = spec.hash_tree_root(depositMessage);
       UInt64 domain = spec.compute_domain(SignatureDomains.DEPOSIT, Bytes4.ZERO);
       signature =
           BLSSignature.wrap(

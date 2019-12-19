@@ -1,14 +1,14 @@
 package org.ethereum.beacon.chain.eventbus.events;
 
-import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 public class ProposedBlockImported extends AbstractBlockEvent {
 
-  public static ProposedBlockImported wrap(BeaconBlock block) {
+  public static ProposedBlockImported wrap(SignedBeaconBlock block) {
     return new ProposedBlockImported(block);
   }
 
-  public ProposedBlockImported(BeaconBlock block) {
+  public ProposedBlockImported(SignedBeaconBlock block) {
     super(block);
   }
 }

@@ -25,6 +25,7 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -58,10 +59,10 @@ public class SyncManagerImpl implements SyncManager {
   private final Flux<SlotNumber> lastSlotFlux;
   FluxSink<Publisher<BlockRequest>> requestsStreams;
   Flux<BlockRequest> blockRequestFlux;
-  Flux<BeaconBlock> finalizedBlockStream;
+  Flux<SignedBeaconBlock> finalizedBlockStream;
   // TODO: make this parameter dynamic depending on active peers number
   int maxConcurrentBlockRequests = 2;
-  private Publisher<Feedback<BeaconBlock>> newBlocks;
+  private Publisher<Feedback<SignedBeaconBlock>> newBlocks;
   private Disposable wireBlocksStreamSub;
   private Disposable finalizedBlockStreamSub;
   private Disposable readyBlocksStreamSub;
@@ -70,7 +71,7 @@ public class SyncManagerImpl implements SyncManager {
 
   public SyncManagerImpl(
       MutableBeaconChain chain,
-      Publisher<Feedback<BeaconBlock>> newBlocks,
+      Publisher<Feedback<SignedBeaconBlock>> newBlocks,
       BeaconChainStorage storage,
       BeaconChainSpec spec,
       WireApiSync syncApi,
@@ -153,7 +154,7 @@ public class SyncManagerImpl implements SyncManager {
         new SimpleProcessor<>(
             delayScheduler,
             "SyncManager.startSlot",
-            chain.getRecentlyProcessed().getBlock().getSlot());
+            chain.getRecentlyProcessed().getBlock().getMessage().getSlot());
     lastSlotFlux =
         Flux.from(blockStatesStream)
             .flatMap(s -> fromOptional(s.getPostSlotState()))
@@ -163,7 +164,7 @@ public class SyncManagerImpl implements SyncManager {
   }
 
   @Override
-  public Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport() {
+  public Publisher<Feedback<SignedBeaconBlock>> getBlocksReadyToImport() {
     return syncQueue.getBlocksStream();
   }
 
@@ -177,7 +178,7 @@ public class SyncManagerImpl implements SyncManager {
 
     finalizedBlockStreamSub = syncQueue.subscribeToFinalBlocks(finalizedBlockStream);
 
-    Flux<Feedback<List<BeaconBlock>>> wireBlocksStream =
+    Flux<Feedback<List<SignedBeaconBlock>>> wireBlocksStream =
         blockRequestFlux
             .map(
                 req ->
@@ -234,12 +235,12 @@ public class SyncManagerImpl implements SyncManager {
   }
 
   @Override
-  public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+  public Disposable subscribeToOnlineBlocks(Publisher<Feedback<SignedBeaconBlock>> onlineBlocks) {
     throw new RuntimeException("Not implemented yet!");
   }
 
   @Override
-  public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+  public Disposable subscribeToFinalizedBlocks(Publisher<SignedBeaconBlock> finalBlocks) {
     throw new RuntimeException("Not implemented yet!");
   }
 
@@ -252,7 +253,7 @@ public class SyncManagerImpl implements SyncManager {
     Publisher<SyncMode> syncModeStream;
 
     public ModeDetector(
-        Publisher<BeaconBlock> importedBlocks, Publisher<BeaconBlock> onlineBlocks) {
+        Publisher<SignedBeaconBlock> importedBlocks, Publisher<SignedBeaconBlock> onlineBlocks) {
 
       syncModeStream =
           Flux.combineLatest(

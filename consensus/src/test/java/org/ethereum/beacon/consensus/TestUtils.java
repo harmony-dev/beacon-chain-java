@@ -51,7 +51,7 @@ public class TestUtils {
           spec.getConstants().getMaxEffectiveBalance(),
           BLSSignature.wrap(Bytes96.ZERO)
       );
-      Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
+      Hash32 msgHash = spec.hash_tree_root(depositDataWithoutSignature);
       UInt64 domain = spec.compute_domain(DEPOSIT, Bytes4.ZERO);
       Signature signature = BLS381
           .sign(MessageParameters.create(msgHash, domain), keyPair);

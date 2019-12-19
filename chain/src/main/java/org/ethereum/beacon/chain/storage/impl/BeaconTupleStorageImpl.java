@@ -29,7 +29,7 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
         .map(
             block ->
                 stateStorage
-                    .get(block.getStateRoot())
+                    .get(block.getMessage().getStateRoot())
                     .map(
                         state ->
                             BeaconTuple.of(
@@ -66,6 +66,6 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
     Objects.requireNonNull(tuple);
 
     blockStorage.put(tuple.getBlock());
-    stateStorage.put(tuple.getBlock().getStateRoot(), tuple.getState());
+    stateStorage.put(tuple.getBlock().getMessage().getStateRoot(), tuple.getState());
   }
 }

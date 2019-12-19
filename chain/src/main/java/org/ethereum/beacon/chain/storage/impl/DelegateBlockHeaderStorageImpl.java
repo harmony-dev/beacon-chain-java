@@ -6,10 +6,12 @@ import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
 import org.ethereum.beacon.db.source.DataSource;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-public class DelegateBlockHeaderStorageImpl implements DataSource<Hash32, BeaconBlockHeader> {
+public class DelegateBlockHeaderStorageImpl implements DataSource<Hash32, SignedBeaconBlockHeader> {
 
   private final BeaconBlockStorage delegateBlockStorage;
   private final ObjectHasher<Hash32> objectHasher;
@@ -22,23 +24,25 @@ public class DelegateBlockHeaderStorageImpl implements DataSource<Hash32, Beacon
   }
 
   @Override
-  public Optional<BeaconBlockHeader> get(@Nonnull Hash32 key) {
+  public Optional<SignedBeaconBlockHeader> get(@Nonnull Hash32 key) {
     return delegateBlockStorage
         .get(key)
         .map(this::createHeader);
   }
 
-  private BeaconBlockHeader createHeader(BeaconBlock block) {
-    return new BeaconBlockHeader(
-        block.getSlot(),
-        block.getParentRoot(),
-        block.getStateRoot(),
-        objectHasher.getHash(block.getBody()),
-        block.getSignature());
+  private SignedBeaconBlockHeader createHeader(SignedBeaconBlock signedBlock) {
+    BeaconBlock block = signedBlock.getMessage();
+    return new SignedBeaconBlockHeader(
+        new BeaconBlockHeader(
+            block.getSlot(),
+            block.getParentRoot(),
+            block.getStateRoot(),
+            objectHasher.getHash(block.getBody())),
+        signedBlock.getSignature());
   }
 
   @Override
-  public void put(@Nonnull Hash32 key, @Nonnull BeaconBlockHeader value) {
+  public void put(@Nonnull Hash32 key, @Nonnull SignedBeaconBlockHeader value) {
     throw new UnsupportedOperationException();
   }
 

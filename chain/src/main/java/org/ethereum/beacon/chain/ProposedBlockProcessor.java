@@ -1,6 +1,7 @@
 package org.ethereum.beacon.chain;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.reactivestreams.Publisher;
 
 /**
@@ -9,8 +10,8 @@ import org.reactivestreams.Publisher;
  */
 public interface ProposedBlockProcessor {
 
-  void newBlockProposed(BeaconBlock newBlcok);
+  void newBlockProposed(SignedBeaconBlock newBlcok);
 
-  Publisher<BeaconBlock> processedBlocksStream();
+  Publisher<SignedBeaconBlock> processedBlocksStream();
 
 }

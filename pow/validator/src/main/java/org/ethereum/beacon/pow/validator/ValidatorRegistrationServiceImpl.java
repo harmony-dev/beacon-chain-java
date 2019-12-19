@@ -17,6 +17,7 @@ import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositMessage;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -270,9 +271,10 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     //    Set deposit_data.signature = BLSSignature.ZERO.
     DepositData preDepositData = new DepositData(blsCredentials.getPubkey(), withdrawalCredentials,
         amount, BLSSignature.ZERO);
+    DepositMessage depositMessage = DepositMessage.from(preDepositData);
     // Let signature be the result of bls_sign of the signing_hash(deposit_data) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = spec.signing_root(preDepositData);
+    Hash32 hash = spec.hash_tree_root(depositMessage);
     BeaconState latestState = getLatestState();
     UInt64 domain = spec.get_domain(latestState, DEPOSIT);
     BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);

@@ -2,6 +2,7 @@ package org.ethereum.beacon.validator.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 
@@ -27,7 +28,7 @@ public class BlockSubmit {
     this.beaconBlock = beaconBlock;
   }
 
-  public BeaconBlock createBeaconBlock(SpecConstants constants) {
-    return BeaconBlockConverter.deserialize(beaconBlock, constants);
+  public SignedBeaconBlock createBeaconBlock(SpecConstants constants) {
+    return BeaconBlockConverter.deserializeAsSigned(beaconBlock, constants);
   }
 }

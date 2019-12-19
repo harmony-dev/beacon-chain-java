@@ -1,10 +1,15 @@
 package org.ethereum.beacon.consensus.spec;
 
-import org.ethereum.beacon.core.BeaconBlock;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
+
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * State transition.
@@ -42,13 +47,12 @@ public interface SpecStateTransition extends EpochProcessing, BlockProcessing {
           state.getLatestBlockHeader().getSlot(),
           state.getLatestBlockHeader().getParentRoot(),
           previous_state_root,
-          state.getLatestBlockHeader().getBodyRoot(),
-          state.getLatestBlockHeader().getSignature()
+          state.getLatestBlockHeader().getBodyRoot()
       ));
     }
 
     // Cache block root
-    Hash32 previous_block_root = signing_root(state.getLatestBlockHeader());
+    Hash32 previous_block_root = hash_tree_root(state.getLatestBlockHeader());
     state.getBlockRoots().update(
         state.getSlot().modulo(getConstants().getSlotsPerHistoricalRoot()),
         root -> previous_block_root);
@@ -77,27 +81,49 @@ public interface SpecStateTransition extends EpochProcessing, BlockProcessing {
   }
 
   /*
-    def state_transition(state: BeaconState, block: BeaconBlock, validate_state_root: bool=False) -> BeaconState:
+    def state_transition(state: BeaconState, signed_block: SignedBeaconBlock, validate_result: bool=True) -> BeaconState:
       # Process slots (including those with no blocks) since block
-      process_slots(state, block.slot)
+      process_slots(state, signed_block.message.slot)
+      # Verify signature
+      if validate_result:
+          assert verify_block_signature(state, signed_block)
       # Process block
-      process_block(state, block)
-      # Validate state root (`validate_state_root == True` in production)
-      if validate_state_root:
-          assert block.state_root == hash_tree_root(state)
+      process_block(state, signed_block.message)
+      if validate_result:
+          assert signed_block.message.state_root == hash_tree_root(state)  # Validate state root
       # Return post-state
       return state
    */
-  default MutableBeaconState state_transition(MutableBeaconState state, BeaconBlock block, boolean validate_state_root) {
+  default MutableBeaconState state_transition(MutableBeaconState state, SignedBeaconBlock signed_block, boolean validate_result) {
     // Process slots (including those with no blocks) since block
-    process_slots(state, block.getSlot());
+    process_slots(state, signed_block.getMessage().getSlot());
+    // Verify signature
+    if (validate_result) {
+      assertTrue(verify_block_signature(state, signed_block));
+    }
     // Process block
-    process_block(state, block);
-    // Validate state root (`validate_state_root == True` in production)
-    if (validate_state_root) {
-      assertTrue(block.getStateRoot().equals(hash_tree_root(state)));
+    process_block(state, signed_block.getMessage());
+    // Validate state root
+    if (validate_result) {
+      assertTrue(signed_block.getMessage().getStateRoot().equals(hash_tree_root(state)));
     }
     // Return post-state
     return state;
+  }
+
+  /*
+    def verify_block_signature(state: BeaconState, signed_block: SignedBeaconBlock) -> bool:
+      proposer = state.validators[get_beacon_proposer_index(state)]
+      domain = get_domain(state, DOMAIN_BEACON_PROPOSER)
+      return bls_verify(proposer.pubkey, hash_tree_root(signed_block.message), signed_block.signature, domain)
+   */
+  default boolean verify_block_signature(BeaconState state, SignedBeaconBlock signed_block) {
+    ValidatorRecord proposer = state.getValidators().get(get_beacon_proposer_index(state));
+    UInt64 domain = get_domain(state, BEACON_PROPOSER);
+    return bls_verify(
+        proposer.getPubKey(),
+        hash_tree_root(signed_block.getMessage()),
+        signed_block.getSignature(),
+        domain);
   }
 }

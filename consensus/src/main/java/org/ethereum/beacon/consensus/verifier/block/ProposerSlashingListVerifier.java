@@ -15,7 +15,7 @@ public class ProposerSlashingListVerifier extends OperationListVerifier<Proposer
       OperationVerifier<ProposerSlashing> operationVerifier, SpecConstants specConstants) {
     super(
         operationVerifier,
-        block -> block.getBody().getProposerSlashings(),
+        block -> block.getMessage().getBody().getProposerSlashings(),
         specConstants.getMaxProposerSlashings());
   }
 

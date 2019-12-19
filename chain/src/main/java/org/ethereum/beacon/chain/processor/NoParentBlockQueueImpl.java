@@ -7,7 +7,7 @@ import java.util.Set;
 import org.ethereum.beacon.chain.eventbus.EventBus;
 import org.ethereum.beacon.chain.eventbus.events.BlockBatchDequeued;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class NoParentBlockQueueImpl implements NoParentBlockQueue {
@@ -15,7 +15,7 @@ public class NoParentBlockQueueImpl implements NoParentBlockQueue {
   private final EventBus eventBus;
   private final BeaconChainSpec spec;
 
-  private final Map<Hash32, Set<BeaconBlock>> blocks = new HashMap<>();
+  private final Map<Hash32, Set<SignedBeaconBlock>> blocks = new HashMap<>();
 
   public NoParentBlockQueueImpl(EventBus eventBus, BeaconChainSpec spec) {
     this.eventBus = eventBus;
@@ -23,15 +23,16 @@ public class NoParentBlockQueueImpl implements NoParentBlockQueue {
   }
 
   @Override
-  public void onBlockWithNoParent(BeaconBlock block) {
-    Set<BeaconBlock> bucket =
-        blocks.computeIfAbsent(block.getParentRoot(), parentRoot -> new HashSet<>());
-    bucket.add(block);
+  public void onBlockWithNoParent(SignedBeaconBlock signedBlock) {
+    Set<SignedBeaconBlock> bucket =
+        blocks.computeIfAbsent(
+            signedBlock.getMessage().getParentRoot(), parentRoot -> new HashSet<>());
+    bucket.add(signedBlock);
   }
 
   @Override
-  public void onImportedBlock(BeaconBlock parent) {
-    Set<BeaconBlock> bucket = blocks.remove(spec.signing_root(parent));
+  public void onImportedBlock(SignedBeaconBlock signedParent) {
+    Set<SignedBeaconBlock> bucket = blocks.remove(spec.hash_tree_root(signedParent.getMessage()));
     if (bucket != null) {
       eventBus.publish(BlockBatchDequeued.wrap(bucket));
     }

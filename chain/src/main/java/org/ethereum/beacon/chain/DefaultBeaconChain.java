@@ -13,6 +13,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -82,11 +83,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private Hash32 getAncestor(Hash32 root, SlotNumber slot) {
-    Optional<BeaconBlock> beaconBlock = chainStorage.getBlockStorage().get(root);
+    Optional<SignedBeaconBlock> beaconBlock = chainStorage.getBlockStorage().get(root);
     if (!beaconBlock.isPresent()) {
       throw new IllegalArgumentException("Cannot find block " + root);
     }
-    return getAncestor(root, beaconBlock.get(), slot);
+    return getAncestor(root, beaconBlock.get().getMessage(), slot);
   }
 
   private Hash32 getAncestor(Hash32 root, BeaconBlock block, SlotNumber slot) {
@@ -100,7 +101,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   @Override
-  public synchronized ImportResult insert(BeaconBlock block) {
+  public synchronized ImportResult insert(SignedBeaconBlock signedBlock) {
+    BeaconBlock block = signedBlock.getMessage();
+
     if (rejectedByTime(block)) {
       return ImportResult.ExpiredBlock;
     }
@@ -116,8 +119,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     long s = System.nanoTime();
 
     Hash32 finalizedRoot = chainStorage.getFinalizedStorage().get().get().getRoot();
-    SlotNumber finalizedSlot = chainStorage.getBlockStorage().get(finalizedRoot).get().getSlot();
-    Hash32 finalizedAncestor = getAncestor(spec.signing_root(block), block, finalizedSlot);
+    SlotNumber finalizedSlot = chainStorage.getBlockStorage().get(finalizedRoot).get().getMessage().getSlot();
+    Hash32 finalizedAncestor = getAncestor(spec.hash_tree_root(block), block, finalizedSlot);
     if (!finalizedAncestor.equals(finalizedRoot)) {
       return ImportResult.ExpiredBlock;
     }
@@ -126,10 +129,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconStateEx preBlockState = preBlockTransition.apply(parentState, block.getSlot());
     VerificationResult blockVerification =
-        blockVerifier.verify(block, preBlockState);
+        blockVerifier.verify(signedBlock, preBlockState);
     if (!blockVerification.isPassed()) {
       logger.warn("Block verification failed: " + blockVerification + ": " +
-          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::signing_root));
+          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::hash_tree_root));
       return ImportResult.InvalidBlock;
     }
 
@@ -142,7 +145,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       return ImportResult.StateMismatch;
     }
 
-    BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
+    BeaconTuple newTuple = BeaconTuple.of(signedBlock, postBlockState);
     tupleStorage.put(newTuple);
     updateFinality(parentState, postBlockState);
 
@@ -151,7 +154,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     long total = System.nanoTime() - s;
 
     this.recentlyProcessed = newTuple;
-    blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postBlockState));
+    blockStream.onNext(new BeaconTupleDetails(signedBlock, preBlockState, postBlockState, postBlockState));
 
     logger.info(
         "new block inserted: {} in {}s",
@@ -160,7 +163,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
             .toString(
                 spec.getConstants(),
                 newTuple.getState().getGenesisTime(),
-                spec::signing_root),
+                spec::hash_tree_root),
         String.format("%.3f", ((double) total) / 1_000_000_000d));
 
     return ImportResult.OK;
@@ -199,7 +202,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     // if new_justified_block.slot <= compute_start_slot_at_epoch(store.justified_checkpoint.epoch):
     //   return False
     BeaconBlock new_justified_block =
-        chainStorage.getBlockStorage().get(new_justified_checkpoint.getRoot()).get();
+        chainStorage.getBlockStorage().get(new_justified_checkpoint.getRoot()).get().getMessage();
     Checkpoint justifiedChkpt = chainStorage.getJustifiedStorage().get().get();
     if (new_justified_block
         .getSlot()
@@ -215,7 +218,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     //   return False
     if (!getAncestor(
             new_justified_checkpoint.getRoot(),
-            chainStorage.getBlockStorage().get(justifiedChkpt.getRoot()).get().getSlot())
+            chainStorage.getBlockStorage().get(justifiedChkpt.getRoot()).get().getMessage().getSlot())
         .equals(justifiedChkpt.getRoot())) {
       return false;
     }
@@ -232,7 +235,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private boolean exist(BeaconBlock block) {
-    Hash32 blockHash = spec.signing_root(block);
+    Hash32 blockHash = spec.hash_tree_root(block);
     return chainStorage.getBlockStorage().get(blockHash).isPresent();
   }
 

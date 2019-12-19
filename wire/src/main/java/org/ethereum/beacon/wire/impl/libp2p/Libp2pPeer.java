@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.Peer;
 import org.ethereum.beacon.wire.PeerConnection;
@@ -33,7 +34,7 @@ public class Libp2pPeer implements Peer {
   class Libp2pWireSync implements WireApiSync {
 
     @Override
-    public CompletableFuture<Feedback<List<BeaconBlock>>> requestBlocks(
+    public CompletableFuture<Feedback<List<SignedBeaconBlock>>> requestBlocks(
         BlockRequestMessage requestMessage, ObjectHasher<Hash32> hasher) {
       return rpcMethods
           .blocks
@@ -43,7 +44,7 @@ public class Libp2pPeer implements Peer {
     }
 
     @Override
-    public CompletableFuture<Feedback<List<BeaconBlock>>> requestRecentBlocks(
+    public CompletableFuture<Feedback<List<SignedBeaconBlock>>> requestRecentBlocks(
         List<Hash32> blockRoots,
         ObjectHasher<Hash32> hasher) {
       return rpcMethods

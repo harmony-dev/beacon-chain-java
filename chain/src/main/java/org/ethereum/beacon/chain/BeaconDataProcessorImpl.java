@@ -59,6 +59,7 @@ import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -196,7 +197,9 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
 
     logger.trace(
         "Yield state at the beginning of slot: "
-            + stateAtTheTip.getLatestSlotState().toString(spec.getConstants(), spec::signing_root));
+            + stateAtTheTip
+                .getLatestSlotState()
+                .toString(spec.getConstants(), spec::hash_tree_root));
   }
 
   void yieldStateThroughoutSlot() {
@@ -205,7 +208,9 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
 
     logger.trace(
         "Yield state throughout a slot: "
-            + stateAtTheTip.getLatestSlotState().toString(spec.getConstants(), spec::signing_root));
+            + stateAtTheTip
+                .getLatestSlotState()
+                .toString(spec.getConstants(), spec::hash_tree_root));
   }
 
   ObservableBeaconState computeStateAtTheTip(TransitionType transitionType) {
@@ -225,58 +230,62 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   @Override
-  public void onBlock(BeaconBlock block) {
+  public void onBlock(SignedBeaconBlock signedBlock) {
     // first of all, put all attestation to event bus in order to get them processed later
-    eventBus.publish(AttestationBatchReceived.wrap(block.getBody().getAttestations().listCopy()));
-    onBlockImpl(block);
+    eventBus.publish(
+        AttestationBatchReceived.wrap(
+            signedBlock.getMessage().getBody().getAttestations().listCopy()));
+    onBlockImpl(signedBlock);
   }
 
-  boolean onBlockImpl(BeaconBlock block) {
-    Optional<BeaconBlock> beforeImport = store.getBlock(helperFunctions.signing_root(block));
+  boolean onBlockImpl(SignedBeaconBlock signedBlock) {
+    BeaconBlock block = signedBlock.getMessage();
+    Optional<BeaconBlock> beforeImport = store.getBlock(helperFunctions.hash_tree_root(block));
 
     StoreTx storeTx = store.newTx();
     // state transition is a part of on_block
     try {
-      forkChoice.on_block(storeTx, block);
+      forkChoice.on_block(storeTx, signedBlock);
       storeTx.commit();
 
-      Optional<BeaconBlock> afterImport = store.getBlock(helperFunctions.signing_root(block));
+      Optional<BeaconBlock> afterImport = store.getBlock(helperFunctions.hash_tree_root(block));
       boolean newlyImported = !beforeImport.isPresent() && afterImport.isPresent();
       if (newlyImported) {
-        eventBus.publish(BlockImported.wrap(block));
+        eventBus.publish(BlockImported.wrap(signedBlock));
         yieldStateThroughoutSlot();
 
         logger.info(
-            "Imported block: " + block.toString(spec.getConstants(), null, spec::signing_root));
+            "Imported block: " + block.toString(spec.getConstants(), null, spec::hash_tree_root));
       }
 
       return newlyImported;
     } catch (BlockIsInTheFutureException e) {
       // queue future blocks
-      eventBus.publish(BlockConsiderationDelayed.wrap(block));
-      logger.debug("Delay block: " + block.toString(spec.getConstants(), null, spec::signing_root));
+      eventBus.publish(BlockConsiderationDelayed.wrap(signedBlock));
+      logger.debug(
+          "Delay block: " + block.toString(spec.getConstants(), null, spec::hash_tree_root));
       return false;
     } catch (NoParentBlockException e) {
       // handle no parent
-      eventBus.publish(BlockMetNoParent.wrap(block));
-      logger.info("No parent: " + block.toString(spec.getConstants(), null, spec::signing_root));
+      eventBus.publish(BlockMetNoParent.wrap(signedBlock));
+      logger.info("No parent: " + block.toString(spec.getConstants(), null, spec::hash_tree_root));
       return false;
     } catch (SpecAssertionFailed e) {
       logger.error(
           "Failed to import a block: "
-              + block.toStringFull(spec.getConstants(), Time.ZERO, spec::signing_root),
+              + block.toStringFull(spec.getConstants(), Time.ZERO, spec::hash_tree_root),
           e);
       return false;
     }
   }
 
-  void onBlockProposed(BeaconBlock block) {
-    if (onBlockImpl(block)) {
-      eventBus.publish(ProposedBlockImported.wrap(block));
+  void onBlockProposed(SignedBeaconBlock signedBlock) {
+    if (onBlockImpl(signedBlock)) {
+      eventBus.publish(ProposedBlockImported.wrap(signedBlock));
     }
   }
 
-  void onBlocksDequeued(Collection<BeaconBlock> blocks) {
+  void onBlocksDequeued(Collection<SignedBeaconBlock> blocks) {
     boolean atLeastOneWasImported = blocks.stream().anyMatch(this::onBlockImpl);
     if (atLeastOneWasImported) {
       yieldStateThroughoutSlot();

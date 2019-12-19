@@ -221,7 +221,7 @@ public class Metrics {
 
   public static void onHeadChanged(BeaconChainSpec spec, BeaconBlock head) {
     HEAD_SLOT.set(head.getSlot().doubleValue());
-    setRoot(HEAD_ROOT, spec.signing_root(head));
+    setRoot(HEAD_ROOT, spec.hash_tree_root(head));
   }
 
 

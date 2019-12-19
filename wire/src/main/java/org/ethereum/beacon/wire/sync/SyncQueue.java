@@ -3,6 +3,7 @@ package org.ethereum.beacon.wire.sync;
 import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.Feedback;
 import org.reactivestreams.Publisher;
@@ -33,14 +34,14 @@ public interface SyncQueue {
    * Blocks are wrapped to a {@link Feedback} instance so
    * block verification and importing result should be reported via this {@link Feedback}
    */
-  Publisher<Feedback<BeaconBlock>> getBlocksStream();
+  Publisher<Feedback<SignedBeaconBlock>> getBlocksStream();
 
   /**
    *  finalBlockRootStream notifies the {@link SyncQueue} on finalized blocks
    *  so the queue may stick to those blocks and perform necessary cleanup
    *  of outdated blocks
    */
-  Disposable subscribeToFinalBlocks(Flux<BeaconBlock> finalBlockRootStream);
+  Disposable subscribeToFinalBlocks(Flux<SignedBeaconBlock> finalBlockRootStream);
 
   /**
    * All new blocks are streamed via blocksStream.
@@ -49,7 +50,7 @@ public interface SyncQueue {
    * - new fresh blocks broadcasted from remote parties
    * - new blocks proposed by local validators
    */
-  Disposable subscribeToNewBlocks(Publisher<Feedback<List<BeaconBlock>>> blocksStream);
+  Disposable subscribeToNewBlocks(Publisher<Feedback<List<SignedBeaconBlock>>> blocksStream);
 
   class BlockRequest {
     private final SlotNumber startSlot;

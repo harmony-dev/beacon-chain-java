@@ -326,19 +326,18 @@ public interface EpochProcessing extends HelperFunction {
   default List<ValidatorIndex> process_registry_updates(MutableBeaconState state) {
     /* Process activation eligibility and ejections
       for index, validator in enumerate(state.validator_registry):
-          if validator.activation_eligibility_epoch == FAR_FUTURE_EPOCH and validator.effective_balance == MAX_EFFECTIVE_BALANCE:
-              validator.activation_eligibility_epoch = get_current_epoch(state)
+        if is_eligible_for_activation_queue(validator):
+            validator.activation_eligibility_epoch = get_current_epoch(state) + 1
 
-          if is_active_validator(validator, get_current_epoch(state)) and validator.effective_balance <= EJECTION_BALANCE:
-              initiate_validator_exit(state, index) */
+        if is_active_validator(validator, get_current_epoch(state)) and validator.effective_balance <= EJECTION_BALANCE:
+            initiate_validator_exit(state, ValidatorIndex(index)) */
     List<ValidatorIndex> ejected = new ArrayList<>();
     for (ValidatorIndex index : state.getValidators().size()) {
       ValidatorRecord validator = state.getValidators().get(index);
-      if (validator.getActivationEligibilityEpoch().equals(getConstants().getFarFutureEpoch())
-          && validator.getEffectiveBalance().equals(getConstants().getMaxEffectiveBalance())) {
+      if (is_eligible_for_activation_queue(validator)) {
         state.getValidators().update(index,
             v -> ValidatorRecord.Builder.fromRecord(v)
-                .withActivationEligibilityEpoch(get_current_epoch(state)).build());
+                .withActivationEligibilityEpoch(get_current_epoch(state).increment()).build());
       }
 
       if (is_active_validator(validator, get_current_epoch(state))
@@ -348,27 +347,25 @@ public interface EpochProcessing extends HelperFunction {
       }
     }
 
-    /* Queue validators eligible for activation and not dequeued for activation prior to finalized epoch
+    /* Queue validators eligible for activation and not yet dequeued for activation
       activation_queue = sorted([
-          index for index, validator in enumerate(state.validator_registry) if
-          validator.activation_eligibility_epoch != FAR_FUTURE_EPOCH and
-          validator.activation_epoch >= compute_activation_exit_epoch(state.finalized_epoch)
-      ], key=lambda index: state.validator_registry[index].activation_eligibility_epoch) */
+          index for index, validator in enumerate(state.validators)
+          if is_eligible_for_activation(state, validator)
+          # Order by the sequence of activation_eligibility_epoch setting and then index
+      ], key=lambda index: (state.validators[index].activation_eligibility_epoch, index)) */
     List<Pair<ValidatorIndex, ValidatorRecord>> activation_queue = new ArrayList<>();
     for (ValidatorIndex index : state.getValidators().size()) {
-      ValidatorRecord v = state.getValidators().get(index);
-      if (!v.getActivationEligibilityEpoch().equals(getConstants().getFarFutureEpoch())
-          && v.getActivationEpoch().greaterEqual(
-          compute_activation_exit_epoch(state.getFinalizedCheckpoint().getEpoch()))) {
-        activation_queue.add(Pair.with(index, v));
+      ValidatorRecord validator = state.getValidators().get(index);
+      if (is_eligible_for_activation(state, validator)) {
+        activation_queue.add(Pair.with(index, validator));
       }
     }
     activation_queue.sort(Comparator.comparing(p -> p.getValue1().getActivationEligibilityEpoch()));
 
-    /* Dequeued validators for activation up to churn limit (without resetting activation epoch)
+    /* Dequeued validators for activation up to churn limit
       for index in activation_queue[:get_validator_churn_limit(state)]:
-          if validator.activation_epoch == FAR_FUTURE_EPOCH:
-              validator.activation_epoch = compute_activation_exit_epoch(get_current_epoch(state)) */
+        validator = state.validators[index]
+        validator.activation_epoch = compute_activation_exit_epoch(get_current_epoch(state)) */
     int limit = get_validator_churn_limit(state).getIntValue();
     List<Pair<ValidatorIndex, ValidatorRecord>> limited_activation_queue =
         activation_queue.size() > limit ? activation_queue.subList(0, limit) : activation_queue;

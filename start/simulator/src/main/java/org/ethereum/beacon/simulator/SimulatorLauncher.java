@@ -23,6 +23,7 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -240,11 +241,11 @@ public class SimulatorLauncher implements Runnable {
           });
       Flux.from(launcher.getImportedBlockStream())
           .subscribe(block -> logger.trace("Block imported: "
-              + block.toString(this.specConstants, genesisTime, spec::signing_root)));
+              + block.toString(this.specConstants, genesisTime, spec::hash_tree_root)));
       if (launcher.getValidatorService() != null) {
         Flux.from(launcher.getValidatorService().getProposedBlocksStream())
             .subscribe(block -> logger.debug("New block created: "
-                + block.toString(this.specConstants, genesisTime, spec::signing_root)));
+                + block.toString(this.specConstants, genesisTime, spec::hash_tree_root)));
         Flux.from(launcher.getValidatorService().getAttestationsStream())
             .subscribe(attest -> logger.debug("New attestation created: "
                 + attest.toString(this.specConstants, genesisTime)));
@@ -257,7 +258,7 @@ public class SimulatorLauncher implements Runnable {
 
     List<SlotNumber> slots = new ArrayList<>();
     List<Attestation> attestations = new ArrayList<>();
-    List<BeaconBlock> blocks = new ArrayList<>();
+    List<SignedBeaconBlock> blocks = new ArrayList<>();
     List<ObservableBeaconState> states = new ArrayList<>();
 
     Flux.from(observer.getSlotStream()).subscribe(slot -> {
@@ -280,7 +281,7 @@ public class SimulatorLauncher implements Runnable {
         .subscribe(block -> {
           blocks.add(block);
           logger.debug("Block imported: "
-              + block.toString(specConstants, genesisTime, spec::signing_root));
+              + block.toString(specConstants, genesisTime, spec::hash_tree_root));
         });
 
     logger.info("Time starts running ...");

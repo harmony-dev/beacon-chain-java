@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.db.source.CodecSource;
@@ -58,14 +59,14 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     }
   }
 
-  private final DataSource<Hash32, BeaconBlock> rawBlocks;
+  private final DataSource<Hash32, SignedBeaconBlock> rawBlocks;
   private final HoleyList<SlotBlocks> blockIndex;
   private final boolean checkBlockExistOnAdd;
   private final boolean checkParentExistOnAdd;
 
   public BeaconBlockStorageImpl(
       ObjectHasher<Hash32> objectHasher,
-      DataSource<Hash32, BeaconBlock> rawBlocks,
+      DataSource<Hash32, SignedBeaconBlock> rawBlocks,
       HoleyList<SlotBlocks> blockIndex) {
     this(objectHasher, rawBlocks, blockIndex, true, true);
   }
@@ -80,7 +81,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
    */
   public BeaconBlockStorageImpl(
       ObjectHasher<Hash32> objectHasher,
-      DataSource<Hash32, BeaconBlock> rawBlocks,
+      DataSource<Hash32, SignedBeaconBlock> rawBlocks,
       HoleyList<SlotBlocks> blockIndex,
       boolean checkBlockExistOnAdd,
       boolean checkParentExistOnAdd) {
@@ -105,12 +106,12 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   }
 
   @Override
-  public Optional<BeaconBlock> get(@Nonnull Hash32 key) {
+  public Optional<SignedBeaconBlock> get(@Nonnull Hash32 key) {
     return rawBlocks.get(key);
   }
 
   @Override
-  public void put(@Nonnull Hash32 newBlockHash, @Nonnull BeaconBlock newBlock) {
+  public void put(@Nonnull Hash32 newBlockHash, @Nonnull SignedBeaconBlock newBlock) {
     if (checkBlockExistOnAdd) {
       if (get(newBlockHash).isPresent()) {
         throw new IllegalArgumentException(
@@ -119,7 +120,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     }
 
     if (!isEmpty() && checkParentExistOnAdd) {
-      if (!get(newBlock.getParentRoot()).isPresent()) {
+      if (!get(newBlock.getMessage().getParentRoot()).isPresent()) {
         throw new IllegalArgumentException("No parent found for added block: " + newBlock);
       }
     }
@@ -127,24 +128,24 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     rawBlocks.put(newBlockHash, newBlock);
     SlotBlocks slotBlocks = new SlotBlocks(newBlockHash);
     blockIndex.update(
-        newBlock.getSlot().getValue(),
+        newBlock.getMessage().getSlot().getValue(),
         blocks -> blocks.addBlock(newBlockHash),
         () -> slotBlocks);
   }
 
   @Override
-  public void put(BeaconBlock block) {
-    this.put(objectHasher.getHashTruncateLast(block), block);
+  public void put(SignedBeaconBlock signedBlock) {
+    this.put(objectHasher.getHash(signedBlock.getMessage()), signedBlock);
   }
 
   @Override
   public void remove(@Nonnull Hash32 key) {
-    Optional<BeaconBlock> block = rawBlocks.get(key);
+    Optional<SignedBeaconBlock> block = rawBlocks.get(key);
     if (block.isPresent()) {
       rawBlocks.remove(key);
       SlotBlocks slotBlocks =
           blockIndex
-              .get(block.get().getSlot().getValue())
+              .get(block.get().getMessage().getSlot().getValue())
               .orElseThrow(
                   () ->
                       new IllegalStateException(
@@ -153,27 +154,27 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
       List<Hash32> newBlocks = new ArrayList<>(slotBlocks.getBlockHashes());
       newBlocks.remove(key);
       blockIndex.put(
-          block.get().getSlot().getValue(),
+          block.get().getMessage().getSlot().getValue(),
           new SlotBlocks(newBlocks));
     }
   }
 
   @Override
-  public List<BeaconBlock> getChildren(@Nonnull Hash32 parent, int limit) {
-    Optional<BeaconBlock> block = get(parent);
+  public List<SignedBeaconBlock> getChildren(@Nonnull Hash32 parent, int limit) {
+    Optional<SignedBeaconBlock> block = get(parent);
     if (!block.isPresent()) {
       return Collections.emptyList();
     }
-    BeaconBlock start = block.get();
-    final List<BeaconBlock> children = new ArrayList<>();
+    SignedBeaconBlock start = block.get();
+    final List<SignedBeaconBlock> children = new ArrayList<>();
 
-    for (SlotNumber curSlot = start.getSlot().increment();
-        curSlot.lessEqual(UInt64s.min(start.getSlot().plus(limit), getMaxSlot()));
+    for (SlotNumber curSlot = start.getMessage().getSlot().increment();
+        curSlot.lessEqual(UInt64s.min(start.getMessage().getSlot().plus(limit), getMaxSlot()));
         curSlot = curSlot.increment()) {
       getSlotBlocks(curSlot).stream()
           .map(this::get)
           .filter(Optional::isPresent)
-          .filter(b -> b.get().getParentRoot().equals(parent))
+          .filter(b -> b.get().getMessage().getParentRoot().equals(parent))
           .forEach(b -> children.add(b.get()));
     }
 
@@ -193,12 +194,12 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     DataSource<BytesValue, BytesValue> backingIndexSource =
         database.createStorage("beacon-block-index");
 
-    DataSource<Hash32, BeaconBlock> blockSource =
+    DataSource<Hash32, SignedBeaconBlock> blockSource =
         new CodecSource<>(
             backingBlockSource,
             key -> key,
-            serializerFactory.getSerializer(BeaconBlock.class),
-            serializerFactory.getDeserializer(BeaconBlock.class));
+            serializerFactory.getSerializer(SignedBeaconBlock.class),
+            serializerFactory.getDeserializer(SignedBeaconBlock.class));
     HoleyList<SlotBlocks> indexSource =
         new DataSourceList<>(
             backingIndexSource,

@@ -2,6 +2,7 @@ package org.ethereum.beacon.chain;
 
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 public class BeaconChainHead {
 
@@ -19,7 +20,7 @@ public class BeaconChainHead {
     return tuple;
   }
 
-  public BeaconBlock getBlock() {
+  public SignedBeaconBlock getBlock() {
     return tuple.getBlock();
   }
 

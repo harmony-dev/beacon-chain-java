@@ -36,7 +36,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
   public BeaconStateEx apply(BeaconStateEx origState) {
     logger.debug(() -> "Applying epoch transition to state: (" +
         spec.hash_tree_root(origState).toStringShort() + ") " +
-        origState.toString(spec.getConstants(), spec::signing_root));
+        origState.toString(spec.getConstants(), spec::hash_tree_root));
 
     TransitionType.EPOCH.checkCanBeAppliedAfter(origState.getTransition());
 
@@ -48,7 +48,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     logger.debug(() -> "Epoch transition result state: (" +
         spec.hash_tree_root(ret).toStringShort() + ") " +
-        ret.toString(spec.getConstants(), spec::signing_root));
+        ret.toString(spec.getConstants(), spec::hash_tree_root));
 
     return ret;
   }

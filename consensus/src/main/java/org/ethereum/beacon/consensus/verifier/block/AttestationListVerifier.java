@@ -15,7 +15,7 @@ public class AttestationListVerifier extends OperationListVerifier<Attestation> 
       OperationVerifier<Attestation> operationVerifier, SpecConstants specConstants) {
     super(
         operationVerifier,
-        block -> block.getBody().getAttestations(),
+        block -> block.getMessage().getBody().getAttestations(),
         specConstants.getMaxAttestations());
   }
 

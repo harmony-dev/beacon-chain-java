@@ -10,6 +10,7 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.validator.api.InvalidInputException;
@@ -82,7 +83,7 @@ public class BlockController extends SyncRestController {
   private Optional<Throwable> acceptBlockSubmit(String body) {
     try {
       final BlockSubmit submitData = Json.decodeValue(body, BlockSubmit.class);
-      BeaconBlock block = submitData.createBeaconBlock(spec.getConstants());
+      SignedBeaconBlock block = submitData.createBeaconBlock(spec.getConstants());
       // Import
       MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
       // Broadcast

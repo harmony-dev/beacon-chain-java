@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
@@ -73,7 +74,7 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<VoluntaryExit> peekExits(int maxCount) {
+  public List<SignedVoluntaryExit> peekExits(int maxCount) {
     return Collections.emptyList();
   }
 }

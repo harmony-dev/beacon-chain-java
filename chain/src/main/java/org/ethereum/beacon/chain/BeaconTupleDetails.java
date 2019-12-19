@@ -6,6 +6,7 @@ import javax.annotation.Nullable;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 public class BeaconTupleDetails extends BeaconTuple {
 
@@ -13,7 +14,7 @@ public class BeaconTupleDetails extends BeaconTuple {
   private final BeaconStateEx postBlockState;
 
   public BeaconTupleDetails(
-      @Nonnull BeaconBlock block,
+      @Nonnull SignedBeaconBlock block,
       @Nullable BeaconStateEx postSlotState,
       @Nullable BeaconStateEx postBlockState,
       @Nonnull BeaconStateEx finalState) {

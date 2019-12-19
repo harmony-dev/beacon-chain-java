@@ -12,6 +12,8 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.exceptions.WireIllegalArgumentsException;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesRequestMessage;
@@ -65,12 +67,12 @@ public class WireApiSyncServer implements WireApiSync {
     if (!BlockHeadersRequestMessage.NULL_START_SLOT.equals(requestMessage.getStartSlot())) {
       slot = requestMessage.getStartSlot();
     } else {
-      Optional<BeaconBlock> blockOpt = storage.getBlockStorage().get(requestMessage.getStartRoot());
-      slot = blockOpt.map(BeaconBlock::getSlot).orElse(null);
+      Optional<SignedBeaconBlock> blockOpt = storage.getBlockStorage().get(requestMessage.getStartRoot());
+      slot = blockOpt.map(signedBlock -> signedBlock.getMessage().getSlot()).orElse(null);
     }
 
     if (slot != null) {
-      List<BeaconBlockHeader> headers = new ArrayList<>();
+      List<SignedBeaconBlockHeader> headers = new ArrayList<>();
       int increment = requestMessage.getSkipSlots().getIntValue() + 1;
       SlotNumber maxSlot = storage.getBlockStorage().getMaxSlot();
       SlotNumber prevSlot = SlotNumber.ZERO;
@@ -109,7 +111,7 @@ public class WireApiSyncServer implements WireApiSync {
 
     List<BeaconBlockBody> bodyList = requestMessage.getBlockTreeRoots().stream()
         .map(blockRoot -> storage.getBlockStorage().get(blockRoot))
-        .flatMap(optionalFlatMap(BeaconBlock::getBody))
+        .flatMap(optionalFlatMap(signedBlock -> signedBlock.getMessage().getBody()))
         .collect(Collectors.toList());
     return CompletableFuture.completedFuture(
         Feedback.of(new BlockBodiesResponseMessage(bodyList)));

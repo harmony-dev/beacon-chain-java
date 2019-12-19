@@ -19,6 +19,7 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconCommittee;
@@ -51,7 +52,7 @@ public class MultiValidatorService implements ValidatorService {
 
   private final Schedulers schedulers;
 
-  private final SimpleProcessor<BeaconBlock> blocksStream;
+  private final SimpleProcessor<SignedBeaconBlock> blocksStream;
   private final SimpleProcessor<Attestation> attestationsStream;
   private final SimpleProcessor<Pair<ValidatorIndex, BLSPubkey>> initializedStream;
 
@@ -269,7 +270,7 @@ public class MultiValidatorService implements ValidatorService {
               .reveal(spec.get_current_epoch(state), state);
       BeaconBlock newBlock =
           proposer.propose(observableState, randaoReveal);
-      BeaconBlock signedBlock =
+      SignedBeaconBlock signedBlock =
           BeaconBlockSigner.getInstance(spec, credentials.getSigner())
               .sign(newBlock, state);
       long total = System.nanoTime() - s;
@@ -281,7 +282,7 @@ public class MultiValidatorService implements ValidatorService {
           signedBlock.toStringFull(
               spec.getConstants(),
               observableState.getLatestSlotState().getGenesisTime(),
-              spec::signing_root),
+              spec::hash_tree_root),
           String.format("%.3f", (double) total / 1_000_000_000d));
     }
   }
@@ -318,7 +319,7 @@ public class MultiValidatorService implements ValidatorService {
               .toString(
                   spec.getConstants(),
                   observableState.getLatestSlotState().getGenesisTime(),
-                  spec::signing_root),
+                  spec::hash_tree_root),
           state.getSlot());
     }
   }
@@ -377,7 +378,7 @@ public class MultiValidatorService implements ValidatorService {
     return state.getSlot().equals(spec.getConstants().getGenesisSlot());
   }
 
-  private void propagateBlock(BeaconBlock newBlock) {
+  private void propagateBlock(SignedBeaconBlock newBlock) {
     blocksStream.onNext(newBlock);
   }
 
@@ -398,7 +399,7 @@ public class MultiValidatorService implements ValidatorService {
   }
 
   @Override
-  public Publisher<BeaconBlock> getProposedBlocksStream() {
+  public Publisher<SignedBeaconBlock> getProposedBlocksStream() {
     return blocksStream;
   }
 

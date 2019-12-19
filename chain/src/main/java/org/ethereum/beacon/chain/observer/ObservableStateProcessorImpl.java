@@ -218,7 +218,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
 
   private void onNewBlockTuple(BeaconTupleDetails beaconTuple) {
-    tupleDetails.get(beaconTuple.getBlock(), (b) -> beaconTuple);
+    tupleDetails.get(beaconTuple.getBlock().getMessage(), (b) -> beaconTuple);
     runTaskInSeparateThread(
         () -> {
           addAttestationsFromState(beaconTuple.getState());
@@ -278,17 +278,17 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       latestState = head.getFinalState();
     }
 
-    if (!head.getBlock().getSlot().greater(latestState.getSlot())) {
+    if (!head.getBlock().getMessage().getSlot().greater(latestState.getSlot())) {
       updateCurrentObservableState(head, latestState.getSlot());
     }
   }
 
   private void newSlot(SlotNumber newSlot) {
-    if (head.getBlock().getSlot().greater(newSlot)) {
+    if (head.getBlock().getMessage().getSlot().greater(newSlot)) {
       logger.info("Ignore new slot " + newSlot + " below head block: " + head.getBlock());
       return;
     }
-    if (newSlot.greater(head.getBlock().getSlot().plus(maxEmptySlotTransitions))) {
+    if (newSlot.greater(head.getBlock().getMessage().getSlot().plus(maxEmptySlotTransitions))) {
       logger.debug("Ignore new slot " + newSlot + " far above head block: " + head.getBlock());
       return;
     }
@@ -317,13 +317,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
-    assert slot.greaterEqual(head.getBlock().getSlot());
+    assert slot.greaterEqual(head.getBlock().getMessage().getSlot());
 
-    if (slot.greater(head.getBlock().getSlot())) {
+    if (slot.greater(head.getBlock().getMessage().getSlot())) {
       BeaconStateEx stateUponASlot;
       if (latestState.getSlot().greater(spec.getConstants().getGenesisSlot())
           && spec.getObjectHasher()
-              .getHashTruncateLast(head.getBlock())
+              .getHash(head.getBlock().getMessage())
               .equals(
                   spec.get_block_root_at_slot(latestState, latestState.getSlot().decrement()))) {
 
@@ -336,22 +336,22 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       latestState = stateUponASlot;
       PendingOperations pendingOperations = getPendingOperations(stateUponASlot, copyOffChainAttestations());
       observableStateStream.onNext(
-          new ObservableBeaconState(head.getBlock(), stateUponASlot, pendingOperations));
+          new ObservableBeaconState(head.getBlock().getMessage(), stateUponASlot, pendingOperations));
     } else {
       PendingOperations pendingOperations = getPendingOperations(head.getFinalState(), copyOffChainAttestations());
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
         observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock(), head.getPostSlotState().get(), pendingOperations));
+            head.getBlock().getMessage(), head.getPostSlotState().get(), pendingOperations));
       }
       if (head.getPostBlockState().isPresent()) {
         latestState = head.getPostBlockState().get();
         observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock(), head.getPostBlockState().get(), pendingOperations));
+            head.getBlock().getMessage(), head.getPostBlockState().get(), pendingOperations));
       } else {
         latestState = head.getFinalState();
         observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock(), head.getFinalState(), pendingOperations));
+            head.getBlock().getMessage(), head.getFinalState(), pendingOperations));
       }
     }
   }
@@ -384,7 +384,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
             (head) -> {
               BeaconTuple newHeadTuple =
                   tupleStorage
-                      .get(spec.signing_root(head))
+                      .get(spec.hash_tree_root(head))
                       .orElseThrow(
                           () -> new IllegalStateException("Beacon tuple not found for new head "));
               return new BeaconTupleDetails(newHeadTuple);

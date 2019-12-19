@@ -1,6 +1,6 @@
 package org.ethereum.beacon.wire.impl.plain.channel.beacon;
 
-import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.reactivestreams.Publisher;
@@ -8,8 +8,8 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
 
 public class WireApiSubAdapter implements WireApiSub, WireApiSubRpc {
-  private final ReplayProcessor<BeaconBlock> blockProcessor = ReplayProcessor.cacheLast();
-  private final FluxSink<BeaconBlock> blockSink = blockProcessor.sink();
+  private final ReplayProcessor<SignedBeaconBlock> blockProcessor = ReplayProcessor.cacheLast();
+  private final FluxSink<SignedBeaconBlock> blockSink = blockProcessor.sink();
   private final ReplayProcessor<Attestation> attestProcessor = ReplayProcessor.cacheLast();
   private final FluxSink<Attestation> attestSink = attestProcessor.sink();
 
@@ -20,7 +20,7 @@ public class WireApiSubAdapter implements WireApiSub, WireApiSubRpc {
   }
 
   @Override
-  public void sendProposedBlock(BeaconBlock block) {
+  public void sendProposedBlock(SignedBeaconBlock block) {
     subClient.newBlock(block);
   }
 
@@ -30,7 +30,7 @@ public class WireApiSubAdapter implements WireApiSub, WireApiSubRpc {
   }
 
   @Override
-  public Publisher<BeaconBlock> inboundBlocksStream() {
+  public Publisher<SignedBeaconBlock> inboundBlocksStream() {
     return blockProcessor;
   }
 
@@ -40,7 +40,7 @@ public class WireApiSubAdapter implements WireApiSub, WireApiSubRpc {
   }
 
   @Override
-  public void newBlock(BeaconBlock block) {
+  public void newBlock(SignedBeaconBlock block) {
     blockSink.next(block);
   }
 

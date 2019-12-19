@@ -1,8 +1,16 @@
 package org.ethereum.beacon.validator.api.convert;
 
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
@@ -30,12 +38,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
-
 /**
  * Converts {@link BeaconBlock} to its representation {@link BlockData} plus parts in both
  * directions
@@ -46,7 +48,6 @@ public abstract class BeaconBlockConverter {
   public static BlockData serialize(BeaconBlock block) {
     BlockData data = new BlockData();
     data.setParentRoot(block.getParentRoot().toString());
-    data.setSignature(block.getSignature().toHexString());
     data.setSlot(block.getSlot().toStringNumber(null));
     data.setStateRoot(block.getStateRoot().toString());
     BlockData.BlockBodyData bodyData = new BlockData.BlockBodyData();
@@ -116,8 +117,8 @@ public abstract class BeaconBlockConverter {
             s -> {
               BlockData.BlockBodyData.ProposerSlashingData slashingData =
                   new BlockData.BlockBodyData.ProposerSlashingData();
-              slashingData.setHeader1(presentBlockHeader(s.getHeader1()));
-              slashingData.setHeader2(presentBlockHeader(s.getHeader2()));
+              slashingData.setHeader1(presentBlockHeader(s.getSignedHeader1()));
+              slashingData.setHeader2(presentBlockHeader(s.getSignedHeader2()));
               slashingData.setProposerIndex(s.getProposerIndex().longValue());
               proposerSlashingList.add(slashingData);
             });
@@ -130,9 +131,9 @@ public abstract class BeaconBlockConverter {
             e -> {
               BlockData.BlockBodyData.VoluntaryExitData exitData =
                   new BlockData.BlockBodyData.VoluntaryExitData();
-              exitData.setEpoch(e.getEpoch().toString());
+              exitData.setEpoch(e.getMessage().getEpoch().toString());
               exitData.setSignature(e.getSignature().toHexString());
-              exitData.setValidatorIndex(e.getValidatorIndex().longValue());
+              exitData.setValidatorIndex(e.getMessage().getValidatorIndex().longValue());
               voluntaryExitList.add(exitData);
             });
     bodyData.setVoluntaryExits(voluntaryExitList);
@@ -143,11 +144,12 @@ public abstract class BeaconBlockConverter {
     return data;
   }
 
-  public static BlockData.BlockHeaderData presentBlockHeader(BeaconBlockHeader header) {
+  public static BlockData.BlockHeaderData presentBlockHeader(SignedBeaconBlockHeader signedHeader) {
+    BeaconBlockHeader header = signedHeader.getMessage();
     BlockData.BlockHeaderData headerData = new BlockData.BlockHeaderData();
     headerData.setBodyRoot(header.getBodyRoot().toString());
     headerData.setParentRoot(header.getParentRoot().toString());
-    headerData.setSignature(header.getSignature().toHexString());
+    headerData.setSignature(signedHeader.getSignature().toHexString());
     headerData.setSlot(header.getSlot().toStringNumber(null));
     headerData.setStateRoot(header.getStateRoot().toString());
 
@@ -187,6 +189,12 @@ public abstract class BeaconBlockConverter {
     return attestationData;
   }
 
+  public static SignedBeaconBlock deserializeAsSigned(BlockData blockData, SpecConstants constants) {
+    return new SignedBeaconBlock(
+        deserialize(blockData, constants),
+        BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));
+  }
+
   public static BeaconBlock deserialize(BlockData blockData, SpecConstants constants) {
     Eth1Data eth1Data1 = parseEth1Data(blockData.getBody().getEth1Data());
 
@@ -220,7 +228,7 @@ public abstract class BeaconBlockConverter {
     }
 
     // Voluntary exits
-    List<VoluntaryExit> voluntaryExits =
+    List<SignedVoluntaryExit> voluntaryExits =
         blockData.getBody().getVoluntaryExits().stream()
             .map(BeaconBlockConverter::parseVoluntaryExit)
             .collect(Collectors.toList());
@@ -237,15 +245,11 @@ public abstract class BeaconBlockConverter {
             deposits,
             voluntaryExits,
             constants);
-    BeaconBlock block =
-        new BeaconBlock(
+    return new BeaconBlock(
             SlotNumber.castFrom(UInt64.valueOf(blockData.getSlot())),
             Hash32.fromHexString(blockData.getParentRoot()),
             Hash32.fromHexString(blockData.getStateRoot()),
-            blockBody,
-            BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));
-
-    return block;
+            blockBody);
   }
 
   public static Deposit parseDeposit(BlockData.BlockBodyData.DepositData data) {
@@ -276,12 +280,12 @@ public abstract class BeaconBlockConverter {
         Hash32.fromHexString(data.getBlockHash()));
   }
 
-  public static BeaconBlockHeader parseBeaconBlockHeader(BlockData.BlockHeaderData data) {
-    return new BeaconBlockHeader(
+  public static SignedBeaconBlockHeader parseBeaconBlockHeader(BlockData.BlockHeaderData data) {
+    return new SignedBeaconBlockHeader(new BeaconBlockHeader(
         SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
         Hash32.fromHexString(data.getParentRoot()),
         Hash32.fromHexString(data.getStateRoot()),
-        Hash32.fromHexString(data.getBodyRoot()),
+        Hash32.fromHexString(data.getBodyRoot())),
         data.getSignature() == null
             ? BLSSignature.ZERO
             : BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
@@ -335,10 +339,10 @@ public abstract class BeaconBlockConverter {
         parseBeaconBlockHeader(data.getHeader2()));
   }
 
-  public static VoluntaryExit parseVoluntaryExit(BlockData.BlockBodyData.VoluntaryExitData data) {
-    return new VoluntaryExit(
-        EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
-        ValidatorIndex.of(data.getValidatorIndex()),
+  public static SignedVoluntaryExit parseVoluntaryExit(BlockData.BlockBodyData.VoluntaryExitData data) {
+    return new SignedVoluntaryExit(
+        new VoluntaryExit(EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
+        ValidatorIndex.of(data.getValidatorIndex())),
         data.getSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getSignature()))
             : BLSSignature.ZERO);

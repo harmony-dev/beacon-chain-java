@@ -1,10 +1,10 @@
 package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -51,7 +51,7 @@ public class BeaconBlockBody {
   private final ReadList<Integer, Deposit> deposits;
   /** A list of validator exits. */
   @SSZ(maxSizeVar = "spec.MAX_VOLUNTARY_EXITS")
-  private final ReadList<Integer, VoluntaryExit> voluntaryExits;
+  private final ReadList<Integer, SignedVoluntaryExit> voluntaryExits;
 
   public BeaconBlockBody(
       BLSSignature randaoReveal,
@@ -61,7 +61,7 @@ public class BeaconBlockBody {
       ReadList<Integer, AttesterSlashing> attesterSlashings,
       ReadList<Integer, Attestation> attestations,
       ReadList<Integer, Deposit> deposits,
-      ReadList<Integer, VoluntaryExit> voluntaryExits,
+      ReadList<Integer, SignedVoluntaryExit> voluntaryExits,
       SpecConstants specConstants) {
     this.randaoReveal = randaoReveal;
     this.eth1Data = eth1Data;
@@ -96,7 +96,7 @@ public class BeaconBlockBody {
       List<AttesterSlashing> attesterSlashings,
       List<Attestation> attestations,
       List<Deposit> deposits,
-      List<VoluntaryExit> voluntaryExits,
+      List<SignedVoluntaryExit> voluntaryExits,
       SpecConstants specConstants) {
     this(
         randaoReveal,
@@ -152,7 +152,7 @@ public class BeaconBlockBody {
     return deposits;
   }
 
-  public ReadList<Integer, VoluntaryExit> getVoluntaryExits() {
+  public ReadList<Integer, SignedVoluntaryExit> getVoluntaryExits() {
     return voluntaryExits;
   }
 

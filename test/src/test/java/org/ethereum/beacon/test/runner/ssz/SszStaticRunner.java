@@ -150,9 +150,6 @@ public class SszStaticRunner implements Runner {
     // which should be used in comparison
     assertEquals(simplified, expectedValue);
     assertHexStrings(testCase.getRoot(), spec.hash_tree_root(fromSerialized).toString());
-    if (testCase.getSigningRoot() != null) {
-      assertHexStrings(testCase.getSigningRoot(), spec.signing_root(fromSerialized).toString());
-    }
 
     return Optional.empty();
   }

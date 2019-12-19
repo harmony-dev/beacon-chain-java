@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.stream.RxUtil;
 import org.ethereum.beacon.util.Utils;
@@ -21,13 +22,13 @@ public class WireApiSubRouter implements WireApiSub {
   private static final int DUPLICATE_DETECTION_SET_SIZE = 64;
 
   private final Flux<Attestation> inboundAttestationsStream;
-  private final Flux<BeaconBlock> inboundBlocksStream;
+  private final Flux<SignedBeaconBlock> inboundBlocksStream;
   private FluxSink<Attestation> localAttestationSink;
-  private FluxSink<BeaconBlock> localBlocksSink;
+  private FluxSink<SignedBeaconBlock> localBlocksSink;
 
   private volatile List<WireApiSub> activeApis = Collections.emptyList();
 
-  Set<BeaconBlock> seenBlocks;
+  Set<SignedBeaconBlock> seenBlocks;
 
   public WireApiSubRouter(
       Publisher<WireApiSub> addedPeersStream,
@@ -39,9 +40,9 @@ public class WireApiSubRouter implements WireApiSub {
     // flood pub realization: upon receiving new block from remote or local
     // broadcasting it to all except sender
     // also filtering already known blocks
-    Flux<BeaconBlock> localBlocks = Flux.create(e -> localBlocksSink = e);
+    Flux<SignedBeaconBlock> localBlocks = Flux.create(e -> localBlocksSink = e);
 
-    Flux<ApiData<BeaconBlock>> allNewBlocks = Flux.from(addedPeersStream)
+    Flux<ApiData<SignedBeaconBlock>> allNewBlocks = Flux.from(addedPeersStream)
         .flatMap(api -> Flux.from(api.inboundBlocksStream()).map(block -> new ApiData<>(api, block)))
         .mergeWith(localBlocks.map(block -> new ApiData<>(this, block)))
         .distinct(ApiData::getData, () -> seenBlocks = Utils.newLRUSet(DUPLICATE_DETECTION_SET_SIZE));
@@ -82,7 +83,7 @@ public class WireApiSubRouter implements WireApiSub {
   }
 
   @Override
-  public void sendProposedBlock(BeaconBlock block) {
+  public void sendProposedBlock(SignedBeaconBlock block) {
     localBlocksSink.next(block);
   }
 
@@ -92,7 +93,7 @@ public class WireApiSubRouter implements WireApiSub {
  }
 
   @Override
-  public Publisher<BeaconBlock> inboundBlocksStream() {
+  public Publisher<SignedBeaconBlock> inboundBlocksStream() {
     return inboundBlocksStream;
   }
 

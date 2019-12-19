@@ -12,6 +12,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.runner.state.StateComparator;
 import org.ethereum.beacon.test.type.TestCase;
@@ -108,28 +109,27 @@ public class InteropTests extends TestUtils {
     }
 
     private Pair<Optional<String>, BeaconState> processBlocks(
-        List<BeaconBlock> blocks, BeaconState state) {
+        List<SignedBeaconBlock> blocks, BeaconState state) {
       EmptySlotTransition preBlockTransition = StateTransitions.preBlockTransition(spec);
       PerBlockTransition blockTransition = StateTransitions.blockTransition(spec);
       BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(spec);
       BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(spec);
       BeaconStateEx stateEx = new BeaconStateExImpl(state);
       try {
-        for (BeaconBlock block : blocks) {
-          stateEx = preBlockTransition.apply(stateEx, block.getSlot());
+        for (SignedBeaconBlock block : blocks) {
+          stateEx = preBlockTransition.apply(stateEx, block.getMessage().getSlot());
           VerificationResult blockVerification = blockVerifier.verify(block, stateEx);
           if (!blockVerification.isPassed()) {
             return Pair.with(Optional.of("Invalid block"), null);
           }
-          stateEx = blockTransition.apply(stateEx, block);
+          stateEx = blockTransition.apply(stateEx, block.getMessage());
           // XXX: incorrect block in case, with wrong consensus, modifying state root
           BeaconBlock blockWFixedRoot =
               new BeaconBlock(
-                  block.getSlot(),
-                  block.getParentRoot(),
+                  block.getMessage().getSlot(),
+                  block.getMessage().getParentRoot(),
                   spec.hash_tree_root(((PostField) testCase).getPost(spec.getConstants())),
-                  block.getBody(),
-                  block.getSignature() // No signature checks are going later, so it's ok
+                  block.getMessage().getBody()
                   );
           VerificationResult stateVerification = stateVerifier.verify(stateEx, blockWFixedRoot);
           if (!stateVerification.isPassed()) {

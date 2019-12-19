@@ -1,6 +1,7 @@
 package org.ethereum.beacon.test.type.state.field;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BlockData;
@@ -8,7 +9,7 @@ import org.ethereum.beacon.test.type.model.BlockData;
 import static org.ethereum.beacon.test.StateTestUtils.parseBlockData;
 
 public interface BlockHeaderField extends DataMapperAccessor {
-  default BeaconBlock getBlock(SpecConstants constants) {
+  default SignedBeaconBlock getBlock(SpecConstants constants) {
     final String key = useSszWhenPossible() ? "block.ssz" : "block.yaml";
     if (!getFiles().containsKey(key)) {
       throw new RuntimeException("`block` not defined");
@@ -16,7 +17,7 @@ public interface BlockHeaderField extends DataMapperAccessor {
 
     // SSZ
     if (useSszWhenPossible()) {
-      return getSszSerializer().decode(getFiles().get(key), BeaconBlock.class);
+      return getSszSerializer().decode(getFiles().get(key), SignedBeaconBlock.class);
     }
 
     // YAML

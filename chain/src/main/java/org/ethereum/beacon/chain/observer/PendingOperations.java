@@ -1,6 +1,7 @@
 package org.ethereum.beacon.chain.observer;
 
 import java.util.List;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
@@ -18,7 +19,7 @@ public interface PendingOperations {
 
   List<Attestation> peekAggregateAttestations(int maxCount, SpecConstants specConstants);
 
-  List<VoluntaryExit> peekExits(int maxCount);
+  List<SignedVoluntaryExit> peekExits(int maxCount);
 
   default String toStringShort() {
     return "PendingOperations["

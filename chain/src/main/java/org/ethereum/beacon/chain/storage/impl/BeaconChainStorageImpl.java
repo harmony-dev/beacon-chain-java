@@ -5,6 +5,7 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.db.source.DataSource;
@@ -16,7 +17,7 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
 
   private final Database database;
   private final BeaconBlockStorage blockStorage;
-  private final DataSource<Hash32, BeaconBlockHeader> blockHeaderStorage;
+  private final DataSource<Hash32, SignedBeaconBlockHeader> blockHeaderStorage;
   private final BeaconStateStorage stateStorage;
   private final BeaconTupleStorage tupleStorage;
   private final SingleValueSource<Checkpoint> justifiedStorage;
@@ -26,7 +27,7 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
   public BeaconChainStorageImpl(
       Database database,
       BeaconBlockStorage blockStorage,
-      DataSource<Hash32, BeaconBlockHeader> blockHeaderStorage,
+      DataSource<Hash32, SignedBeaconBlockHeader> blockHeaderStorage,
       BeaconStateStorage stateStorage,
       BeaconTupleStorage tupleStorage,
       SingleValueSource<Checkpoint> justifiedStorage,
@@ -48,7 +49,7 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
   }
 
   @Override
-  public DataSource<Hash32, BeaconBlockHeader> getBlockHeaderStorage() {
+  public DataSource<Hash32, SignedBeaconBlockHeader> getBlockHeaderStorage() {
     return blockHeaderStorage;
   }
 

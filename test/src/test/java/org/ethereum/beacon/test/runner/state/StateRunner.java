@@ -23,6 +23,8 @@ import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
@@ -194,7 +196,7 @@ public class StateRunner implements Runner {
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
-  private Optional<String> processVoluntaryExit(VoluntaryExit voluntaryExit, BeaconState state) {
+  private Optional<String> processVoluntaryExit(SignedVoluntaryExit voluntaryExit, BeaconState state) {
     VoluntaryExitVerifier verifier = new VoluntaryExitVerifier(spec);
     return processOperation(
         voluntaryExit,
@@ -205,12 +207,12 @@ public class StateRunner implements Runner {
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
-  private Optional<String> processBlockHeader(BeaconBlock block, BeaconState state) {
+  private Optional<String> processBlockHeader(SignedBeaconBlock block, BeaconState state) {
     BeaconBlockVerifier verifier = BeaconBlockVerifier.createDefault(spec);
     try {
       VerificationResult verificationResult = verifier.verify(block, state);
       if (verificationResult.isPassed()) {
-        spec.process_block_header((MutableBeaconState) state, block);
+        spec.process_block_header((MutableBeaconState) state, block.getMessage());
         return Optional.empty();
       } else {
         return Optional.of(verificationResult.getMessage());
@@ -291,21 +293,21 @@ public class StateRunner implements Runner {
   }
 
   private Pair<Optional<String>, BeaconState> processBlocks(
-      List<BeaconBlock> blocks, BeaconState state) {
+      List<SignedBeaconBlock> blocks, BeaconState state) {
     EmptySlotTransition preBlockTransition = StateTransitions.preBlockTransition(spec);
     PerBlockTransition blockTransition = StateTransitions.blockTransition(spec);
     BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(spec);
     BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(spec);
     BeaconStateEx stateEx = new BeaconStateExImpl(state);
     try {
-      for (BeaconBlock block : blocks) {
-        stateEx = preBlockTransition.apply(stateEx, block.getSlot());
+      for (SignedBeaconBlock block : blocks) {
+        stateEx = preBlockTransition.apply(stateEx, block.getMessage().getSlot());
         VerificationResult blockVerification = blockVerifier.verify(block, stateEx);
         if (!blockVerification.isPassed()) {
           return Pair.with(Optional.of("Invalid block"), null);
         }
-        stateEx = blockTransition.apply(stateEx, block);
-        VerificationResult stateVerification = stateVerifier.verify(stateEx, block);
+        stateEx = blockTransition.apply(stateEx, block.getMessage());
+        VerificationResult stateVerification = stateVerifier.verify(stateEx, block.getMessage());
         if (!stateVerification.isPassed()) {
           return Pair.with(Optional.of("State mismatch"), null);
         }

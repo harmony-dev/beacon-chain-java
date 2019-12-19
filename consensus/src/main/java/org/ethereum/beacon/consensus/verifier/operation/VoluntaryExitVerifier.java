@@ -5,6 +5,7 @@ import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 
 /**
@@ -15,7 +16,7 @@ import org.ethereum.beacon.core.operations.VoluntaryExit;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#voluntary-exits">Voluntary
  *     exits</a> in the spec.
  */
-public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
+public class VoluntaryExitVerifier implements OperationVerifier<SignedVoluntaryExit> {
 
   private BeaconChainSpec spec;
 
@@ -24,7 +25,7 @@ public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
   }
 
   @Override
-  public VerificationResult verify(VoluntaryExit voluntaryExit, BeaconState state) {
+  public VerificationResult verify(SignedVoluntaryExit voluntaryExit, BeaconState state) {
     try {
       spec.verify_voluntary_exit(state, voluntaryExit);
       return VerificationResult.PASSED;

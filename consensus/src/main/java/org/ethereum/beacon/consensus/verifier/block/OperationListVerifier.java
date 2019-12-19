@@ -12,6 +12,7 @@ import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 /**
@@ -37,13 +38,13 @@ import tech.pegasys.artemis.util.collections.ReadList;
 public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
 
   private OperationVerifier<T> operationVerifier;
-  private Function<BeaconBlock, Iterable<T>> operationListExtractor;
+  private Function<SignedBeaconBlock, Iterable<T>> operationListExtractor;
   private int maxOperationsInList;
   private List<BiFunction<Iterable<T>, BeaconState, VerificationResult>> customVerifiers;
 
   protected OperationListVerifier(
       OperationVerifier<T> operationVerifier,
-      Function<BeaconBlock, Iterable<T>> operationListExtractor,
+      Function<SignedBeaconBlock, Iterable<T>> operationListExtractor,
       int maxOperationsInList) {
     this.operationVerifier = operationVerifier;
     this.operationListExtractor = operationListExtractor;
@@ -52,7 +53,7 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
   }
 
   @Override
-  public VerificationResult verify(BeaconBlock block, BeaconState state) {
+  public VerificationResult verify(SignedBeaconBlock block, BeaconState state) {
     Iterable<T> operations = operationListExtractor.apply(block);
 
     if (ReadList.sizeOf(operations) > maxOperationsInList) {

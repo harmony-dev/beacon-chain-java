@@ -80,27 +80,6 @@ public class SSZObjectHasherTest {
   }
 
   @Test
-  public void simpleTruncateTest() {
-    AttestationRecord attestationRecord =
-        new AttestationRecord(
-            123,
-            Collections.emptyList(),
-            DEFAULT_HASH,
-            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
-            DEFAULT_HASH,
-            12412L,
-            12400L,
-            DEFAULT_SIG);
-
-    // Sig only removed
-    BytesValue hash2 = sszHasher.getHashTruncateLast(attestationRecord);
-//    assertEquals(
-//        BytesValue.fromHexString(
-//            "0xae3f28da5903192bff0472fc12baf3acb8c2554606c2449f833d2079188eb871"),
-//        hash2);
-  }
-
-  @Test
   public void list32Test() {
     List<byte[]> hashes = new ArrayList<>();
     hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")).getArrayUnsafe());

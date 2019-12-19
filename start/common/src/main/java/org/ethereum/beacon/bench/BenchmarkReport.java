@@ -362,7 +362,6 @@ public class BenchmarkReport {
 
   private static final String[] HELPER_FUNCTIONS = {
     "hash_tree_root",
-    "signing_root",
     "get_beacon_committee",
     "get_beacon_proposer_index",
     "get_active_validator_indices",

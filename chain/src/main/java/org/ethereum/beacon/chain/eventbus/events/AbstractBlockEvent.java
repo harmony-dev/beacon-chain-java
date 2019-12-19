@@ -2,17 +2,18 @@ package org.ethereum.beacon.chain.eventbus.events;
 
 import org.ethereum.beacon.chain.eventbus.EventBus.Event;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
-abstract class AbstractBlockEvent implements Event<BeaconBlock> {
+abstract class AbstractBlockEvent implements Event<SignedBeaconBlock> {
 
-  private final BeaconBlock block;
+  private final SignedBeaconBlock block;
 
-  protected AbstractBlockEvent(BeaconBlock block) {
+  protected AbstractBlockEvent(SignedBeaconBlock block) {
     this.block = block;
   }
 
   @Override
-  public BeaconBlock getValue() {
+  public SignedBeaconBlock getValue() {
     return block;
   }
 }

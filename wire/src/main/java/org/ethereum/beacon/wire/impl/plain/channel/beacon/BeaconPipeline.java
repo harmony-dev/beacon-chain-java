@@ -5,6 +5,7 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -205,7 +206,7 @@ public class BeaconPipeline {
 
     return new WireApiSubRpc() {
       @Override
-      public void newBlock(BeaconBlock block) {
+      public void newBlock(SignedBeaconBlock block) {
         blocks.notifyRemote(new NotifyNewBlockMessage(block));
       }
 

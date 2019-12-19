@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -25,13 +24,10 @@ public class VoluntaryExit {
   @SSZ private final EpochNumber epoch;
   /** Index of the exiting validator. */
   @SSZ private final ValidatorIndex validatorIndex;
-  /** Validator signature. */
-  @SSZ private final BLSSignature signature;
 
-  public VoluntaryExit(EpochNumber epoch, ValidatorIndex validatorIndex, BLSSignature signature) {
+  public VoluntaryExit(EpochNumber epoch, ValidatorIndex validatorIndex) {
     this.epoch = epoch;
     this.validatorIndex = validatorIndex;
-    this.signature = signature;
   }
 
   public EpochNumber getEpoch() {
@@ -42,10 +38,6 @@ public class VoluntaryExit {
     return validatorIndex;
   }
 
-  public BLSSignature getSignature() {
-    return signature;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -54,15 +46,13 @@ public class VoluntaryExit {
       return false;
     VoluntaryExit voluntaryExit = (VoluntaryExit) o;
     return Objects.equal(epoch, voluntaryExit.epoch)
-        && Objects.equal(validatorIndex, voluntaryExit.validatorIndex)
-        && Objects.equal(signature, voluntaryExit.signature);
+        && Objects.equal(validatorIndex, voluntaryExit.validatorIndex);
   }
 
   @Override
   public int hashCode() {
     int result = epoch.hashCode();
     result = 31 * result + validatorIndex.hashCode();
-    result = 31 * result + signature.hashCode();
     return result;
   }
 
@@ -75,7 +65,6 @@ public class VoluntaryExit {
     return "VoluntaryExit["
         + "epoch=" + epoch.toString(spec)
         + ", validator=" + validatorIndex
-        + ", sig=" + signature
         +"]";
   }
 }

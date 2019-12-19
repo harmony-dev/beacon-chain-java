@@ -23,7 +23,6 @@ public class BeaconBlockHeaderSerializer implements ObjectSerializer<BeaconBlock
     beaconBlockHeader.put("previous_block_root", instance.getParentRoot().toString());
     beaconBlockHeader.put("state_root", instance.getStateRoot().toString());
     beaconBlockHeader.put("block_body_root", instance.getBodyRoot().toString());
-    beaconBlockHeader.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return beaconBlockHeader;
   }
 }

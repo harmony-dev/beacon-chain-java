@@ -20,7 +20,6 @@ public abstract class ExitTestUtil {
   }
 
   public static VoluntaryExit createRandom(Random random) {
-    return new VoluntaryExit(
-        EpochNumber.ZERO, ValidatorIndex.ZERO, BLSSignature.wrap(Bytes96.random(random)));
+    return new VoluntaryExit(EpochNumber.ZERO, ValidatorIndex.ZERO);
   }
 }

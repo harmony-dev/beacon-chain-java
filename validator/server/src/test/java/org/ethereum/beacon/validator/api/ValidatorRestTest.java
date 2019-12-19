@@ -232,7 +232,6 @@ public class ValidatorRestTest {
     server.start();
     BeaconBlock block =
         BeaconBlock.Builder.createEmpty()
-            .withSignature(BLSSignature.ZERO)
             .withStateRoot(Hash32.ZERO)
             .withSlot(SlotNumber.ZERO)
             .withBody(BeaconBlockBody.getEmpty(CONSTANTS))
@@ -265,7 +264,6 @@ public class ValidatorRestTest {
             });
     BeaconBlock block =
         BeaconBlock.Builder.createEmpty()
-            .withSignature(BLSSignature.ZERO)
             .withStateRoot(Hash32.ZERO)
             .withSlot(SlotNumber.ZERO)
             .withBody(BeaconBlockBody.getEmpty(CONSTANTS))
