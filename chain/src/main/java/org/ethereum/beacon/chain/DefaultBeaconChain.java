@@ -159,7 +159,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     logger.info(
         "new block inserted: {} in {}s",
         newTuple
-            .getBlock()
+            .getSignedBlock()
             .toString(
                 spec.getConstants(),
                 newTuple.getState().getGenesisTime(),

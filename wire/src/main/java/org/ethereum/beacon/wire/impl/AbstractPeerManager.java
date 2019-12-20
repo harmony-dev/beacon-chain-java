@@ -64,8 +64,8 @@ public abstract class AbstractPeerManager implements PeerManager {
         Bytes4.ZERO,
         head.getFinalState().getFinalizedCheckpoint().getRoot(),
         head.getFinalState().getFinalizedCheckpoint().getEpoch(),
-        spec.getObjectHasher().getHash(head.getBlock()),
-        head.getBlock().getMessage().getSlot());
+        spec.getObjectHasher().getHash(head.getSignedBlock()),
+        head.getSignedBlock().getMessage().getSlot());
   }
 
   private void updateBestSlot(Peer peer) {

@@ -2,6 +2,7 @@ package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
@@ -78,7 +79,7 @@ public class RestClient implements ValidatorClient {
   }
 
   @Override
-  public Response postBlock(BeaconBlock block) {
+  public Response postBlock(SignedBeaconBlock block) {
     BlockSubmit blockSubmit = BlockSubmit.fromBeaconBlock(block);
     return client
         .target(url)

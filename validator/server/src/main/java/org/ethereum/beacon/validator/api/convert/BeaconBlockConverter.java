@@ -46,8 +46,15 @@ public abstract class BeaconBlockConverter {
   public BeaconBlockConverter() {}
 
   public static BlockData serialize(BeaconBlock block) {
+    return serialize(new SignedBeaconBlock(block, BLSSignature.ZERO));
+  }
+
+  public static BlockData serialize(SignedBeaconBlock signedBlock) {
+    BeaconBlock block = signedBlock.getMessage();
+
     BlockData data = new BlockData();
     data.setParentRoot(block.getParentRoot().toString());
+    data.setSignature(signedBlock.getSignature().toHexString());
     data.setSlot(block.getSlot().toStringNumber(null));
     data.setStateRoot(block.getStateRoot().toString());
     BlockData.BlockBodyData bodyData = new BlockData.BlockBodyData();

@@ -3,7 +3,6 @@ package org.ethereum.beacon.node;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -64,7 +63,7 @@ public class BeaconTupleDetailsDumper {
   public void dump(BeaconTupleDetails beaconTupleDetails) throws IOException {
     Optional<BeaconStateEx> preState = beaconTupleDetails.getPostSlotState();
     Optional<BeaconStateEx> postState = beaconTupleDetails.getPostBlockState();
-    SignedBeaconBlock block = beaconTupleDetails.getBlock();
+    SignedBeaconBlock block = beaconTupleDetails.getSignedBlock();
 
     if (preState.isPresent() && postState.isPresent()) {
       String num = Integer.toString(currentBlock.incrementAndGet());

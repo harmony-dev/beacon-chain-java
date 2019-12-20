@@ -65,7 +65,7 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
   public void put(@Nonnull BeaconTuple tuple) {
     Objects.requireNonNull(tuple);
 
-    blockStorage.put(tuple.getBlock());
-    stateStorage.put(tuple.getBlock().getMessage().getStateRoot(), tuple.getState());
+    blockStorage.put(tuple.getSignedBlock());
+    stateStorage.put(tuple.getSignedBlock().getMessage().getStateRoot(), tuple.getState());
   }
 }

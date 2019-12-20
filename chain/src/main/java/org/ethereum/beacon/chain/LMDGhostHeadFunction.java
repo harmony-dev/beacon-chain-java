@@ -126,7 +126,8 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
       @Override
       public Optional<BeaconState> getState(Hash32 root) {
-        return chainStorage.getStateStorage().get(root);
+        return chainStorage.getBlockStorage().get(root)
+            .flatMap(block -> chainStorage.getStateStorage().get(block.getMessage().getStateRoot()));
       }
 
       @Override

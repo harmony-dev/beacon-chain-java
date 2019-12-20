@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTuple;
@@ -23,7 +22,6 @@ import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -88,7 +86,7 @@ public class SyncManagerImpl implements SyncManager {
 
     modeDetector =
         new ModeDetector(
-            Flux.from(chain.getBlockStatesStream()).map(BeaconTuple::getBlock),
+            Flux.from(chain.getBlockStatesStream()).map(BeaconTuple::getSignedBlock),
             Flux.from(newBlocks).map(Feedback::get));
     syncModeFlux = Flux.from(modeDetector.getSyncModeStream()).replay(1).autoConnect();
     final Scheduler delayScheduler = schedulers.events();
@@ -154,7 +152,7 @@ public class SyncManagerImpl implements SyncManager {
         new SimpleProcessor<>(
             delayScheduler,
             "SyncManager.startSlot",
-            chain.getRecentlyProcessed().getBlock().getMessage().getSlot());
+            chain.getRecentlyProcessed().getSignedBlock().getMessage().getSlot());
     lastSlotFlux =
         Flux.from(blockStatesStream)
             .flatMap(s -> fromOptional(s.getPostSlotState()))

@@ -32,9 +32,9 @@ public class StorageUtils {
       BeaconChainStorage storage, BeaconChainSpec spec, BeaconStateEx initialState) {
     assert storage.getTupleStorage().isEmpty();
     BeaconTuple tuple = createInitialBeaconTuple(spec, initialState);
-    Hash32 genesisRoot = spec.hash_tree_root(tuple.getBlock());
-    storage.getStateStorage().put(tuple.getBlock().getMessage().getStateRoot(), tuple.getState());
-    storage.getBlockStorage().put(genesisRoot, tuple.getBlock());
+    Hash32 genesisRoot = spec.hash_tree_root(tuple.getSignedBlock().getMessage());
+    storage.getStateStorage().put(tuple.getSignedBlock().getMessage().getStateRoot(), tuple.getState());
+    storage.getBlockStorage().put(genesisRoot, tuple.getSignedBlock());
     Checkpoint justifiedChkpt =
         new Checkpoint(initialState.getCurrentJustifiedCheckpoint().getEpoch(), genesisRoot);
     storage.getJustifiedStorage().set(justifiedChkpt);

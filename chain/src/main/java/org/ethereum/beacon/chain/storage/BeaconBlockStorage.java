@@ -1,10 +1,9 @@
 package org.ethereum.beacon.chain.storage;
 
-import org.ethereum.beacon.core.BeaconBlock;
+import java.util.List;
 import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import java.util.List;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface BeaconBlockStorage extends HashKeyStorage<Hash32, SignedBeaconBlock> {

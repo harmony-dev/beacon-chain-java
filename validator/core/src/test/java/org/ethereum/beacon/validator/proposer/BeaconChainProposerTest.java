@@ -4,6 +4,7 @@ import static org.ethereum.beacon.validator.ValidatorSpecTestUtil.verifySignatur
 import static org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil.mockProposer;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -116,8 +117,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block =
         proposer.propose(initialObservedState, randaoReveal);
 
-    Mockito.verify(pendingOperations)
-        .peekAggregateAttestations(spec.getConstants().getMaxAttestations(), spec.getConstants());
+    Mockito.verify(pendingOperations).getAttestations();
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());
@@ -134,7 +134,7 @@ public class BeaconChainProposerTest {
         BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState);
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
 
-    Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
+    Assert.assertEquals(new HashSet<>(attestations), new HashSet<>(block.getBody().getAttestations().listCopy()));
     Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings().listCopy());
     Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings().listCopy());
     Assert.assertEquals(voluntaryExits, block.getBody().getVoluntaryExits().listCopy());

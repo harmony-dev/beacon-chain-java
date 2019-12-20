@@ -16,7 +16,7 @@ public class BlockSubmit {
     this.beaconBlock = beaconBlock;
   }
 
-  public static BlockSubmit fromBeaconBlock(BeaconBlock block) {
+  public static BlockSubmit fromBeaconBlock(SignedBeaconBlock block) {
     return new BlockSubmit(BeaconBlockConverter.serialize(block));
   }
 

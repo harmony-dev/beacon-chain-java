@@ -187,7 +187,7 @@ public class Launcher {
             stateVerifier,
             beaconChainStorage,
             schedulers);
-    importedBlockStream = Flux.from(beaconChain.getBlockStatesStream()).map(BeaconTuple::getBlock);
+    importedBlockStream = Flux.from(beaconChain.getBlockStatesStream()).map(BeaconTuple::getSignedBlock);
     beaconChain.init();
 
     slotTicker =

@@ -4,8 +4,6 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.TransitionType;
-import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 public class BeaconTupleDetails extends BeaconTuple {
@@ -24,7 +22,7 @@ public class BeaconTupleDetails extends BeaconTuple {
     this.postBlockState = postBlockState;
   }
   public BeaconTupleDetails(BeaconTuple tuple) {
-    this(tuple.getBlock(), null, null, tuple.getState());
+    this(tuple.getSignedBlock(), null, null, tuple.getState());
   }
 
   public Optional<BeaconStateEx> getPostSlotState() {

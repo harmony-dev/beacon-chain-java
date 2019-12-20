@@ -57,7 +57,7 @@ public class DefaultBeaconChainTest {
     beaconChain.init();
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
     Assert.assertEquals(
-        spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getMessage().getSlot());
+        spec.getConstants().getGenesisSlot(), initialTuple.getSignedBlock().getMessage().getSlot());
 
     IntStream.range(0, 10)
         .forEach(
@@ -65,12 +65,12 @@ public class DefaultBeaconChainTest {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
               schedulers.setCurrentTime(
                   spec.get_slot_start_time(recentlyProcessed.getState(),
-                      recentlyProcessed.getBlock().getMessage().getSlot().increment()).getValue()*1000);
+                      recentlyProcessed.getSignedBlock().getMessage().getSlot().increment()).getValue()*1000);
               SignedBeaconBlock aBlock =
                   createBlock(
                       recentlyProcessed, spec, schedulers.getCurrentTime(), perSlotTransition);
               Assert.assertEquals(ImportResult.OK, beaconChain.insert(aBlock));
-              Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
+              Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getSignedBlock());
 
               System.out.println("Inserted block: " + (idx + 1));
             });
@@ -83,7 +83,7 @@ public class DefaultBeaconChainTest {
     BeaconBlock block =
         new BeaconBlock(
             spec.get_current_slot(parent.getState(), currentTime),
-            spec.hash_tree_root(parent.getBlock()),
+            spec.hash_tree_root(parent.getSignedBlock().getMessage()),
             Hash32.ZERO,
             BeaconBlockBody.getEmpty(spec.getConstants()));
     BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
@@ -145,7 +145,7 @@ public class DefaultBeaconChainTest {
 
     beaconChain.init();
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
-    Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getMessage().getSlot());
+    Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getSignedBlock().getMessage().getSlot());
 
     BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
 

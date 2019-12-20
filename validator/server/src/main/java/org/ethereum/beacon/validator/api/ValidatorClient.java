@@ -1,6 +1,7 @@
 package org.ethereum.beacon.validator.api;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.validator.api.model.BlockData;
@@ -29,7 +30,7 @@ public interface ValidatorClient {
   BeaconBlock getBlock(BigInteger slot, String randaoReveal, SpecConstants constants);
 
   /* Publish a signed block */
-  Response postBlock(BeaconBlock block);
+  Response postBlock(SignedBeaconBlock block);
 
   /* Produce an attestation, without signature */
   BlockData.BlockBodyData.IndexedAttestationData getAttestation(

@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator.api;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -237,7 +238,7 @@ public class ValidatorRestTest {
             .withBody(BeaconBlockBody.getEmpty(CONSTANTS))
             .withParentRoot(Hash32.ZERO)
             .build();
-    Response response = client.postBlock(block);
+    Response response = client.postBlock(new SignedBeaconBlock(block, BLSSignature.ZERO));
     assertEquals(503, response.getStatus()); // Still syncing
   }
 
@@ -269,7 +270,7 @@ public class ValidatorRestTest {
             .withBody(BeaconBlockBody.getEmpty(CONSTANTS))
             .withParentRoot(Hash32.ZERO)
             .build();
-    Response response = client.postBlock(block);
+    Response response = client.postBlock(new SignedBeaconBlock(block, BLSSignature.ZERO));
     assertEquals(202, response.getStatus());
     // 202 The block failed validation, but was successfully broadcast anyway. It was not integrated
     // into the beacon node's database.

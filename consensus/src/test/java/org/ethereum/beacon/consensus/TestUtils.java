@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositMessage;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
@@ -51,7 +52,8 @@ public class TestUtils {
           spec.getConstants().getMaxEffectiveBalance(),
           BLSSignature.wrap(Bytes96.ZERO)
       );
-      Hash32 msgHash = spec.hash_tree_root(depositDataWithoutSignature);
+      DepositMessage depositMessage = DepositMessage.from(depositDataWithoutSignature);
+      Hash32 msgHash = spec.hash_tree_root(depositMessage);
       UInt64 domain = spec.compute_domain(DEPOSIT, Bytes4.ZERO);
       Signature signature = BLS381
           .sign(MessageParameters.create(msgHash, domain), keyPair);

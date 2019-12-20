@@ -3,7 +3,6 @@ package org.ethereum.beacon.chain.observer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -218,7 +217,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
 
   private void onNewBlockTuple(BeaconTupleDetails beaconTuple) {
-    tupleDetails.get(beaconTuple.getBlock().getMessage(), (b) -> beaconTuple);
+    tupleDetails.get(beaconTuple.getSignedBlock().getMessage(), (b) -> beaconTuple);
     runTaskInSeparateThread(
         () -> {
           addAttestationsFromState(beaconTuple.getState());
@@ -278,18 +277,18 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       latestState = head.getFinalState();
     }
 
-    if (!head.getBlock().getMessage().getSlot().greater(latestState.getSlot())) {
+    if (!head.getSignedBlock().getMessage().getSlot().greater(latestState.getSlot())) {
       updateCurrentObservableState(head, latestState.getSlot());
     }
   }
 
   private void newSlot(SlotNumber newSlot) {
-    if (head.getBlock().getMessage().getSlot().greater(newSlot)) {
-      logger.info("Ignore new slot " + newSlot + " below head block: " + head.getBlock());
+    if (head.getSignedBlock().getMessage().getSlot().greater(newSlot)) {
+      logger.info("Ignore new slot " + newSlot + " below head block: " + head.getSignedBlock());
       return;
     }
-    if (newSlot.greater(head.getBlock().getMessage().getSlot().plus(maxEmptySlotTransitions))) {
-      logger.debug("Ignore new slot " + newSlot + " far above head block: " + head.getBlock());
+    if (newSlot.greater(head.getSignedBlock().getMessage().getSlot().plus(maxEmptySlotTransitions))) {
+      logger.debug("Ignore new slot " + newSlot + " far above head block: " + head.getSignedBlock());
       return;
     }
 
@@ -317,13 +316,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
-    assert slot.greaterEqual(head.getBlock().getMessage().getSlot());
+    assert slot.greaterEqual(head.getSignedBlock().getMessage().getSlot());
 
-    if (slot.greater(head.getBlock().getMessage().getSlot())) {
+    if (slot.greater(head.getSignedBlock().getMessage().getSlot())) {
       BeaconStateEx stateUponASlot;
       if (latestState.getSlot().greater(spec.getConstants().getGenesisSlot())
           && spec.getObjectHasher()
-              .getHash(head.getBlock().getMessage())
+              .getHash(head.getSignedBlock().getMessage())
               .equals(
                   spec.get_block_root_at_slot(latestState, latestState.getSlot().decrement()))) {
 
@@ -336,22 +335,22 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       latestState = stateUponASlot;
       PendingOperations pendingOperations = getPendingOperations(stateUponASlot, copyOffChainAttestations());
       observableStateStream.onNext(
-          new ObservableBeaconState(head.getBlock().getMessage(), stateUponASlot, pendingOperations));
+          new ObservableBeaconState(head.getSignedBlock().getMessage(), stateUponASlot, pendingOperations));
     } else {
       PendingOperations pendingOperations = getPendingOperations(head.getFinalState(), copyOffChainAttestations());
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
         observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock().getMessage(), head.getPostSlotState().get(), pendingOperations));
+            head.getSignedBlock().getMessage(), head.getPostSlotState().get(), pendingOperations));
       }
       if (head.getPostBlockState().isPresent()) {
         latestState = head.getPostBlockState().get();
         observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock().getMessage(), head.getPostBlockState().get(), pendingOperations));
+            head.getSignedBlock().getMessage(), head.getPostBlockState().get(), pendingOperations));
       } else {
         latestState = head.getFinalState();
         observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock().getMessage(), head.getFinalState(), pendingOperations));
+            head.getSignedBlock().getMessage(), head.getFinalState(), pendingOperations));
       }
     }
   }
@@ -375,7 +374,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         headFunction.getHead(
             validatorIndex ->
                 Optional.ofNullable(latestMessagesCopy.getOrDefault(validatorIndex, null)));
-    if (this.head != null && this.head.getBlock().equals(newHead)) {
+    if (this.head != null && this.head.getSignedBlock().getMessage().equals(newHead)) {
       return; // == old
     }
     BeaconTupleDetails tuple =
