@@ -2,10 +2,15 @@ package org.ethereum.beacon.test.runner.ssz.mapper;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.beacon.core.state.PendingAttestation;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.Bitlist;
 
 public class PendingAttestationSerializer implements ObjectSerializer<PendingAttestation> {
   private com.fasterxml.jackson.databind.ObjectMapper mapper;
   private AttestationDataSerializer attestationDataSerializer;
+  private SSZSerializer sszSerializer = new SSZBuilder().buildSerializer();
 
   public PendingAttestationSerializer(com.fasterxml.jackson.databind.ObjectMapper mapper) {
     this.mapper = mapper;
@@ -20,7 +25,7 @@ public class PendingAttestationSerializer implements ObjectSerializer<PendingAtt
   @Override
   public ObjectNode map(PendingAttestation instance) {
     ObjectNode pendingAttestation = mapper.createObjectNode();
-    pendingAttestation.put("aggregation_bitfield", instance.getAggregationBits().toString());
+    pendingAttestation.put("aggregation_bits", sszSerializer.encode2(instance.getAggregationBits()).toString());
     pendingAttestation.set("data", attestationDataSerializer.map(instance.getData()));
     pendingAttestation.set("inclusion_delay", ComparableBigIntegerNode.valueOf(instance.getInclusionDelay()));
     pendingAttestation.set("proposer_index", ComparableBigIntegerNode.valueOf(instance.getProposerIndex()));

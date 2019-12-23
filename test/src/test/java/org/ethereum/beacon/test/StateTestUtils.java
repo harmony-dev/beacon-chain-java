@@ -49,7 +49,12 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public abstract class StateTestUtils {
   private StateTestUtils() {}
 
-  public static SignedBeaconBlock parseBlockData(BlockData blockData, SpecConstants constants) {
+  public static SignedBeaconBlock parseSignedBlockData(BlockData blockData, SpecConstants constants) {
+    BeaconBlock block = parseBlockData(blockData, constants);
+    return new SignedBeaconBlock(block, BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));
+  }
+
+  public static BeaconBlock parseBlockData(BlockData blockData, SpecConstants constants) {
     Eth1Data eth1Data1 = parseEth1Data(blockData.getBody().getEth1Data());
 
     // Attestations
@@ -126,15 +131,11 @@ public abstract class StateTestUtils {
             deposits,
             voluntaryExits,
             constants);
-    BeaconBlock block =
-        new BeaconBlock(
+    return new BeaconBlock(
             SlotNumber.castFrom(UInt64.valueOf(blockData.getSlot())),
             Hash32.fromHexString(blockData.getParentRoot()),
             Hash32.fromHexString(blockData.getStateRoot()),
             blockBody);
-
-    return new SignedBeaconBlock(
-        block, BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));
   }
 
   public static IndexedAttestation parseSlashableAttestation(

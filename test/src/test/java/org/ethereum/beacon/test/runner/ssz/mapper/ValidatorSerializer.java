@@ -26,7 +26,7 @@ public class ValidatorSerializer implements ObjectSerializer<ValidatorRecord> {
     validatorRecord.set("exit_epoch", ComparableBigIntegerNode.valueOf(instance.getExitEpoch()));
     validatorRecord.set("withdrawable_epoch", ComparableBigIntegerNode.valueOf(instance.getWithdrawableEpoch()));
     validatorRecord.put("slashed", instance.getSlashed());
-    validatorRecord.set("high_balance", ComparableBigIntegerNode.valueOf(instance.getEffectiveBalance()));
+    validatorRecord.set("effective_balance", ComparableBigIntegerNode.valueOf(instance.getEffectiveBalance()));
     return validatorRecord;
   }
 }

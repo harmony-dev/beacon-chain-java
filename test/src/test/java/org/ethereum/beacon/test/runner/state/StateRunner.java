@@ -1,5 +1,8 @@
 package org.ethereum.beacon.test.runner.state;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.StateTransition;
@@ -28,8 +31,8 @@ import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.state.FinalUpdatesProcessingCase;
@@ -48,10 +51,6 @@ import org.ethereum.beacon.test.type.state.SlashingsProcessingCase;
 import org.ethereum.beacon.test.type.state.field.PostField;
 import org.ethereum.beacon.test.type.state.field.PreField;
 import org.javatuples.Pair;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * TestRunner for several types of state tests including operations processing and epoch processing
@@ -207,12 +206,13 @@ public class StateRunner implements Runner {
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
-  private Optional<String> processBlockHeader(SignedBeaconBlock block, BeaconState state) {
+  private Optional<String> processBlockHeader(BeaconBlock block, BeaconState state) {
     BeaconBlockVerifier verifier = BeaconBlockVerifier.createDefault(spec);
     try {
-      VerificationResult verificationResult = verifier.verify(block, state);
+      VerificationResult verificationResult =
+          verifier.verify(new SignedBeaconBlock(block, BLSSignature.ZERO), state);
       if (verificationResult.isPassed()) {
-        spec.process_block_header((MutableBeaconState) state, block.getMessage());
+        spec.process_block_header((MutableBeaconState) state, block);
         return Optional.empty();
       } else {
         return Optional.of(verificationResult.getMessage());

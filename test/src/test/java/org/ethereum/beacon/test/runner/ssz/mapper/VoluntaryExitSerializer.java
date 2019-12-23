@@ -5,7 +5,7 @@ import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-public class VoluntaryExitSerializer implements ObjectSerializer<SignedVoluntaryExit> {
+public class VoluntaryExitSerializer implements ObjectSerializer<VoluntaryExit> {
   private com.fasterxml.jackson.databind.ObjectMapper mapper;
 
   public VoluntaryExitSerializer(com.fasterxml.jackson.databind.ObjectMapper mapper) {
@@ -18,11 +18,10 @@ public class VoluntaryExitSerializer implements ObjectSerializer<SignedVoluntary
   }
 
   @Override
-  public ObjectNode map(SignedVoluntaryExit instance) {
+  public ObjectNode map(VoluntaryExit instance) {
     ObjectNode voluntaryExit = mapper.createObjectNode();
-    voluntaryExit.set("epoch", ComparableBigIntegerNode.valueOf(instance.getMessage().getEpoch()));
-    voluntaryExit.set("validator_index", ComparableBigIntegerNode.valueOf(instance.getMessage().getValidatorIndex()));
-    voluntaryExit.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
+    voluntaryExit.set("epoch", ComparableBigIntegerNode.valueOf(instance.getEpoch()));
+    voluntaryExit.set("validator_index", ComparableBigIntegerNode.valueOf(instance.getValidatorIndex()));
     return voluntaryExit;
   }
 }

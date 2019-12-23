@@ -20,7 +20,7 @@ public class ProposerSlashingSerializer implements ObjectSerializer<ProposerSlas
   @Override
   public ObjectNode map(ProposerSlashing instance) {
     ObjectNode proposerSlashing = mapper.createObjectNode();
-    proposerSlashing.put("proposer_index", instance.getProposerIndex().getValue());
+    proposerSlashing.set("proposer_index", ComparableBigIntegerNode.valueOf(instance.getProposerIndex()));
     proposerSlashing.set("signed_header_1", signedBeaconBlockHeaderSerializer.map(instance.getSignedHeader1()));
     proposerSlashing.set("signed_header_2", signedBeaconBlockHeaderSerializer.map(instance.getSignedHeader2()));
     return proposerSlashing;
