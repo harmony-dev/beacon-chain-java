@@ -15,6 +15,15 @@ public class BeaconStateData {
 
   private List<ValidatorData> validators;
 
+  @JsonProperty("block_roots")
+  private List<String> blockRoots;
+
+  @JsonProperty("state_roots")
+  private List<String> stateRoots;
+
+  @JsonProperty("historical_roots")
+  private List<String> historicalRoots;
+
   private List<String> balances;
 
   @JsonProperty("randao_mixes")
@@ -186,6 +195,30 @@ public class BeaconStateData {
 
   public void setEth1DepositIndex(Long eth1DepositIndex) {
     this.eth1DepositIndex = eth1DepositIndex;
+  }
+
+  public List<String> getBlockRoots() {
+    return blockRoots;
+  }
+
+  public void setBlockRoots(List<String> blockRoots) {
+    this.blockRoots = blockRoots;
+  }
+
+  public List<String> getStateRoots() {
+    return stateRoots;
+  }
+
+  public void setStateRoots(List<String> stateRoots) {
+    this.stateRoots = stateRoots;
+  }
+
+  public List<String> getHistoricalRoots() {
+    return historicalRoots;
+  }
+
+  public void setHistoricalRoots(List<String> historicalRoots) {
+    this.historicalRoots = historicalRoots;
   }
 
   public static class Fork {
