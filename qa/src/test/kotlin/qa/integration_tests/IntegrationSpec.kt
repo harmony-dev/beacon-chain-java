@@ -8,15 +8,18 @@ import org.ethereum.beacon.core.state.Checkpoint
 import org.ethereum.beacon.core.types.CommitteeIndex
 import org.ethereum.beacon.core.types.EpochNumber
 import org.ethereum.beacon.core.types.SlotNumber
-import org.ethereum.beacon.emulator.config.main.ValidatorKeys
-import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract
 import org.ethereum.beacon.start.common.Launcher
 import qa.ObservableStates
+import qa.Tester
 import tech.pegasys.artemis.ethereum.core.Hash32
 import java.util.*
 
+interface TestBase {
+  val genesisTime get() = Date(2019, 8, 24, 0, 0, 0).time
+  val Launcher.lastObservableState get() = ObservableStates.data[this]!!
+}
 
-open class IntegrationSpec: AnnotationSpec() {
+open class IntegrationSpec: AnnotationSpec(), TestBase {
     override fun testCases(): List<TestCase> {
         return super.testCases().map {
             if (it.name.startsWith("f_")) {
@@ -27,7 +30,6 @@ open class IntegrationSpec: AnnotationSpec() {
             }
         }
     }
-    val genesisTime = Date(2019, 8, 24, 0, 0, 0).time
 
     fun AttestationData.withBeaconBlockRoot(root: Hash32) =
             AttestationData(slot, index, root, source, target)
@@ -47,14 +49,10 @@ open class IntegrationSpec: AnnotationSpec() {
   fun Checkpoint.withEpoch(epoch: EpochNumber) = Checkpoint(epoch, root)
   fun Checkpoint.withRoot(root: Hash32) = Checkpoint(epoch, root)
 
-  fun createContract(genesisTime: Long, validatorCount: Int): EmulatorContract {
-        val contract = EmulatorContract()
-        val interopKeys = ValidatorKeys.InteropKeys()
-        interopKeys.count = validatorCount
-        contract.keys = listOf<ValidatorKeys>(interopKeys)
-        contract.genesisTime = Date(genesisTime)
-        return contract
+  private var _tester: Tester? = null
+  var tester: Tester
+    get() = _tester!!
+    set(value) {
+      _tester = value
     }
-
-  val Launcher.lastObservableState get() = ObservableStates.data[this]!!
 }

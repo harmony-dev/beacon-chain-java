@@ -1,22 +1,20 @@
 package qa.integration_tests
 
-import io.kotlintest.matchers.collections.shouldHaveSingleElement
-import io.kotlintest.matchers.collections.shouldHaveSize
 import io.kotlintest.shouldBe
 import io.kotlintest.shouldNotBe
 import org.ethereum.beacon.chain.BeaconTuple
-import org.ethereum.beacon.chain.MutableBeaconChain
 import org.ethereum.beacon.core.BeaconBlock
 import org.ethereum.beacon.core.types.BLSSignature
 import org.ethereum.beacon.core.types.SlotNumber
 import qa.Store
 import qa.TestChain
 import qa.Tester
+import qa.Tester.Companion.createContract
 
 class OnBlockTests: IntegrationSpec() {
     @Test
     fun testUpdateFinality() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
         val testChain = TestChain(tester)
         val genesis = testChain.head
 
@@ -48,7 +46,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testFinalizedAncestor() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
         val testChain = TestChain(tester)
         val genesis = testChain.head
 
@@ -84,7 +82,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testFinalizedAncestor2() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
         val testChain = TestChain(tester)
 
         val genesis = testChain.head
@@ -115,7 +113,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testFinalizedAncestor3() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
         val testChain = TestChain(tester)
         val genesis = testChain.head
 
@@ -145,7 +143,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testValid1() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(1)
@@ -157,7 +155,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testValid2() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(2)
@@ -169,7 +167,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testExisting() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(2)
@@ -183,7 +181,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testExisting2() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(2)
@@ -200,7 +198,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testTimeReject1() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(3)
@@ -215,7 +213,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testTimeReject2() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(4)
@@ -233,7 +231,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testInvalidParent() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(2, postProcess = {
@@ -247,7 +245,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testInvalidStateRoot() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(2, postProcess = {
@@ -261,7 +259,7 @@ class OnBlockTests: IntegrationSpec() {
 
     @Test
     fun testInvalidSignature() {
-        val tester = Tester(createContract(genesisTime, 16))
+        tester = Tester(createContract(genesisTime, 16))
 
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(2)

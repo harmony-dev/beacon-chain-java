@@ -27,6 +27,7 @@ import org.ethereum.beacon.core.types.ValidatorIndex
 import org.ethereum.beacon.db.source.DataSource
 import org.ethereum.beacon.db.source.SingleValueSource
 import org.ethereum.beacon.emulator.config.main.Signer
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract
 import org.ethereum.beacon.node.ConfigUtils
 import org.ethereum.beacon.qa.TestUtils
@@ -46,8 +47,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32
 import tech.pegasys.artemis.util.bytes.Bytes48
 import tech.pegasys.artemis.util.collections.ReadList
 import java.lang.IllegalStateException
-import java.util.Optional
-import java.util.Collections
+import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
@@ -77,6 +77,17 @@ object ObservableStates {
 }
 
 class Tester(contract: EmulatorContract) {
+  companion object {
+    fun createContract(genesisTime: Long, validatorCount: Int): EmulatorContract {
+      val contract = EmulatorContract()
+      val interopKeys = ValidatorKeys.InteropKeys()
+      interopKeys.count = validatorCount
+      contract.keys = listOf<ValidatorKeys>(interopKeys)
+      contract.genesisTime = Date(genesisTime)
+      return contract
+    }
+  }
+
   val spec = TestUtils.getBeaconChainSpec()
   val mdcControlledSchedulers = MDCControlledSchedulers()
 

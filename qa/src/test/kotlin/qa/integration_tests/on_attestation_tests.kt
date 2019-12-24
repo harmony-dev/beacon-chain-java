@@ -9,6 +9,7 @@ import org.ethereum.beacon.core.types.EpochNumber
 import org.ethereum.beacon.core.types.SlotNumber
 import qa.TestChain
 import qa.Tester
+import qa.Tester.Companion.createContract
 
 open class InvalidAttestationSpec: IntegrationSpec() {
   var genesis: BeaconTuple? = null
@@ -19,10 +20,9 @@ open class InvalidAttestationSpec: IntegrationSpec() {
   var _testChain: TestChain? = null
   val testChain get() = _testChain ?: throw IllegalStateException("Not initialized")
 
-  val tester get() = testChain.tester
-
   fun setUp(startEpoch: Int? = null) {
-    _testChain = TestChain(Tester(createContract(genesisTime, 16)))
+    tester = Tester(createContract(genesisTime, 16))
+    _testChain = TestChain(tester)
     genesis = testChain.head
 
     val startEpochNumber = startEpoch ?: 0
@@ -249,10 +249,9 @@ class InvalidIndexedAttestation: InvalidAttestationSpec() {
 }
 
 class OnAttestationTests : IntegrationSpec() {
-
   @Test
   fun testAttestation_late_parent() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -275,7 +274,7 @@ class OnAttestationTests : IntegrationSpec() {
 
   @Test
   fun testAttestation() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -291,12 +290,12 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5)
 
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block3.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block3.block)
   }
 
   @Test
   fun testAttestation1_wire_attestations() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -311,12 +310,12 @@ class OnAttestationTests : IntegrationSpec() {
 
     tester.currentSlot = SlotNumber(5)
 
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block2.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
   @Test
   fun testAttestation1_block_attestations() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -332,12 +331,13 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5, parent = block1)
 
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block2.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
   @Test
   fun testAttestation1_block_attestations2() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
+
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -354,12 +354,12 @@ class OnAttestationTests : IntegrationSpec() {
     val block3 = testChain.proposeBlock(5)
 
     tester.testLauncher.lastObservableState.head shouldBe block3.block
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block3.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block3.block)
   }
 
   @Test
   fun testAttestation2() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -375,12 +375,12 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5, parent = block1)
 
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block2.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
   @Test
   fun testAttestation1_block_wire_attestations() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -397,12 +397,12 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5, parent = block1)
 
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block2.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
   @Test
   fun testAttestation_early() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -419,13 +419,13 @@ class OnAttestationTests : IntegrationSpec() {
     testChain.gatherAttestations(nonHeadTuple)
     testChain.sendAttestations(testChain.mkAttestations())
 
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(prevHead)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(prevHead)
     tester.testLauncher.lastObservableState.head shouldBe prevHead
   }
 
   @Test
   fun testAttestation_late() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
@@ -446,24 +446,24 @@ class OnAttestationTests : IntegrationSpec() {
     val block3 = testChain.proposeBlock(5, parent = prevHeadTuple)
 
     tester.testLauncher.lastObservableState.head shouldBe block3.block
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block3.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block3.block)
 
     testChain.sendAttestations(atts)
 
     tester.mdcControlledSchedulers.addTime(1000)
 
     tester.testLauncher.lastObservableState.head shouldBe nonHeadTuple.block
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(nonHeadTuple.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(nonHeadTuple.block)
 
     tester.currentSlot = SlotNumber(6)
 
     tester.testLauncher.lastObservableState.head shouldBe nonHeadTuple.block
-    tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(nonHeadTuple.block)
+    tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(nonHeadTuple.block)
   }
 
   @Test
   fun testAttestation_early_before_block() {
-    val tester = Tester(createContract(genesisTime, 16))
+    tester = Tester(createContract(genesisTime, 16))
     val testChain = TestChain(tester)
     val genesis = testChain.head
 
