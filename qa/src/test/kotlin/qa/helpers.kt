@@ -35,12 +35,18 @@ import org.ethereum.beacon.start.common.Launcher
 import org.ethereum.beacon.start.common.util.BLS381MessageSignerFactory
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers
 import org.ethereum.beacon.start.common.util.SimpleDepositContract
+import org.ethereum.beacon.test.StateTestUtils
 import org.ethereum.beacon.validator.BeaconBlockSigner
 import org.ethereum.beacon.validator.RandaoGenerator
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl
 import org.ethereum.beacon.validator.crypto.BLS381MessageSigner
 import org.ethereum.beacon.wire.WireApiSub
 import org.reactivestreams.Publisher
+import qa.integration_tests.AttestationEvent
+import qa.integration_tests.BlockEvent
+import qa.integration_tests.CheckEvent
+import qa.integration_tests.SlotEvent
+import qa.integration_tests.TestEvent
 import reactor.core.publisher.DirectProcessor
 import reactor.core.publisher.Flux
 import tech.pegasys.artemis.ethereum.core.Hash32
@@ -76,7 +82,7 @@ object ObservableStates {
   val data = hashMapOf<Launcher,ObservableBeaconState>()
 }
 
-class Tester(contract: EmulatorContract) {
+class Tester(contract: EmulatorContract, val recordEvents: Boolean = true) {
   companion object {
     fun createContract(genesisTime: Long, validatorCount: Int): EmulatorContract {
       val contract = EmulatorContract()
@@ -95,6 +101,8 @@ class Tester(contract: EmulatorContract) {
     mdcControlledSchedulers.currentTime = contract.genesisTime.time - 1000
   }
 
+  val events = mutableListOf<TestEvent>()
+
   val wireApi = TestWire()
   var testLauncher = createTestLauncher(spec, contract, wireApi, mdcControlledSchedulers)
 
@@ -106,6 +114,8 @@ class Tester(contract: EmulatorContract) {
     set(value) {
       mdcControlledSchedulers.currentTime = spec.get_slot_start_time(
           baseState, value).millis.value
+      if (recordEvents)
+        events.add(SlotEvent(value.intValue))
     }
 
   val currentEpoch: EpochNumber
@@ -214,6 +224,9 @@ class Tester(contract: EmulatorContract) {
   val stateStorage get() = chainStorage.stateStorage
   fun root(a: Any?): Hash32 = spec.signing_root(a)
 
+  private var _genesisState: BeaconState? = null
+  val genesisState get() = _genesisState!!
+
   private fun createTestLauncher(spec: BeaconChainSpec, contract: EmulatorContract, wireApi: TestWire, mdcControlledSchedulers: MDCControlledSchedulers): Launcher {
     val signerFactory =
         if (spec.isBlsVerifyProofOfPossession)
@@ -244,6 +257,10 @@ class Tester(contract: EmulatorContract) {
           ObservableStates.data[launcher] = it
         }
     mdcControlledSchedulers.currentTime = chainStart.time.millis.value
+    if (ObservableStates.data[launcher]?.latestSlotState?.slot != SlotNumber.ZERO)
+      throw IllegalStateException("No genesis state")
+    else
+      _genesisState = ObservableStates.data[launcher]?.latestSlotState
     return launcher
   }
 }
@@ -288,6 +305,19 @@ class TestChain(val tester: Tester) {
         throw IllegalStateException("No state")
     }
 
+  fun addCheck(name: String, goldenValue: Any) {
+    if (tester.recordEvents)
+      tester.events.add(CheckEvent(mapOf(name to goldenValue)))
+  }
+
+  fun addHeadCheck(block: BeaconBlock) {
+    addBlockCheck("head", block)
+  }
+
+  fun addBlockCheck(name: String, block: BeaconBlock) {
+    addCheck(name, tester.root(block).toString())
+  }
+
   fun mkBlock(slot: Int, parent: BeaconTuple? = null, attestations: List<Attestation>? = null,
               postProcess: ((BeaconBlock) -> BeaconBlock)? = null): BeaconTuple {
     val parentTuple = parent ?: head
@@ -302,10 +332,14 @@ class TestChain(val tester: Tester) {
 
   fun sendBlock(block: BeaconBlock) {
     tester.wireApi.blockProcSink.next(block)
+    if (tester.recordEvents)
+      tester.events.add(BlockEvent(StateTestUtils.serializeBlock(block)))
   }
 
   fun sendAttestation(attestation: Attestation) {
     tester.wireApi.attProcSink.next(attestation)
+    if (tester.recordEvents)
+      tester.events.add(AttestationEvent(StateTestUtils.serializeAttestation(attestation)))
   }
 
   fun sendAttestations(attestations: List<Attestation>) {

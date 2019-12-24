@@ -27,4 +27,5 @@ dependencies {
   implementation project(':validator:core')
   implementation project(':wire')
   implementation project(':util')
+  testCompile project(':test').sourceSets.test.output
 }

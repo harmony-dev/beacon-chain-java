@@ -55,4 +55,10 @@ open class IntegrationSpec: AnnotationSpec(), TestBase {
     set(value) {
       _tester = value
     }
+
+  private var testName: String? = null
+  override fun beforeTest(testCase: TestCase) {
+    testName = testCase.name
+    super.beforeTest(testCase)
+  }
 }
