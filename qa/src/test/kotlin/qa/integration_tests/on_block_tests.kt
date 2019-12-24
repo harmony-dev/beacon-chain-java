@@ -41,6 +41,7 @@ class OnBlockTests: IntegrationSpec() {
 
         testChain.proposeBlock(12, parent = fork0, attestations = emptyList())
 
+        testChain.addCheck("justified_checkpoint.epoch", justifiedChkpt.epoch.intValue)
         tester.chainStorage.justifiedStorage.get().get().epoch.intValue shouldBe justifiedChkpt.epoch.intValue
     }
 
@@ -63,6 +64,8 @@ class OnBlockTests: IntegrationSpec() {
         checkNoFinalizedAncestor(testChain, pBlock)
 
         testChain.sendBlock(pBlock.block)
+
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
 
@@ -108,6 +111,7 @@ class OnBlockTests: IntegrationSpec() {
         checkNoFinalizedAncestor(testChain, pBlock)
 
         tester.wireApi.blockProcSink.next(pBlock.block)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
 
@@ -138,6 +142,7 @@ class OnBlockTests: IntegrationSpec() {
         checkNoFinalizedAncestor(testChain, pBlock)
 
         tester.wireApi.blockProcSink.next(pBlock.block)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
 
@@ -150,6 +155,7 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
@@ -162,6 +168,7 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
@@ -174,8 +181,10 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
@@ -188,11 +197,14 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
         tester.currentSlot = SlotNumber(3)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
@@ -205,9 +217,11 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
 
         tester.currentSlot = SlotNumber(3)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
@@ -220,12 +234,15 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
 
         tester.currentSlot = SlotNumber(3)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
 
         tester.currentSlot = SlotNumber(4)
+        testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
@@ -240,6 +257,7 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
     }
 
@@ -254,6 +272,7 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(pBlock.block)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
     }
 
@@ -268,6 +287,7 @@ class OnBlockTests: IntegrationSpec() {
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(block)
+        testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(block)].isPresent shouldBe  false
     }
 

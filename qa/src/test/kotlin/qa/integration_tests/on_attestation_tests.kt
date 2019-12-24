@@ -40,9 +40,11 @@ open class InvalidAttestationSpec: IntegrationSpec() {
     //testChain.sendAttestations(testChain.mkAttestations(block1).subList(0,2))
 
     tester.currentSlot = SlotNumber(startSlot+2)
+    testChain.addHeadCheck(block1!!.block)
     tester.testLauncher.lastObservableState.head shouldBe block1!!.block
     block2 = testChain.proposeBlock(startSlot+2, block0)
 
+    testChain.addHeadCheck(block1!!.block)
     tester.testLauncher.lastObservableState.head shouldBe block1!!.block
   }
 
@@ -55,6 +57,7 @@ open class InvalidAttestationSpec: IntegrationSpec() {
         postSign = postSign))
     tester.currentSlot = tester.currentSlot.increment()
 
+    testChain.addHeadCheck(block1!!.block)
     tester.testLauncher.lastObservableState.head shouldBe block1!!.block
   }
 
@@ -71,6 +74,7 @@ open class InvalidAttestationSpec: IntegrationSpec() {
         validators = attesters.subList(1, attesters.size)))
     tester.currentSlot = tester.currentSlot.increment()
 
+    testChain.addHeadCheck(block2!!.block)
     tester.testLauncher.lastObservableState.head shouldBe block2!!.block
   }
 
@@ -87,6 +91,7 @@ open class InvalidAttestationSpec: IntegrationSpec() {
         postSign = postSign))
     tester.currentSlot = tester.currentSlot.increment()
 
+    testChain.addHeadCheck(block2!!.block)
     tester.testLauncher.lastObservableState.head shouldBe block2!!.block
   }
 }
@@ -261,14 +266,17 @@ class OnAttestationTests : IntegrationSpec() {
     testChain.sendAttestations(testChain.mkAttestations(block1).subList(0, 2))
 
     tester.currentSlot = SlotNumber(2)
+    testChain.addHeadCheck(block1.block)
     tester.testLauncher.lastObservableState.head shouldBe block1.block
     val block2 = testChain.mkBlock(2, genesis)
 
     testChain.sendAttestations(testChain.mkAttestations(block2))
     tester.currentSlot = SlotNumber(3)
+    testChain.addHeadCheck(block1.block)
     tester.testLauncher.lastObservableState.head shouldBe block1.block
 
     testChain.sendBlock(block2.block)
+    testChain.addHeadCheck(block2.block)
     tester.testLauncher.lastObservableState.head shouldBe block2.block
   }
 
@@ -290,6 +298,7 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5)
 
+    testChain.addHeadCheck(block3.block)
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block3.block)
   }
 
@@ -310,6 +319,7 @@ class OnAttestationTests : IntegrationSpec() {
 
     tester.currentSlot = SlotNumber(5)
 
+    testChain.addHeadCheck(block2.block)
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
@@ -331,6 +341,7 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5, parent = block1)
 
+    testChain.addHeadCheck(block2.block)
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
@@ -353,6 +364,7 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5)
 
+    testChain.addHeadCheck(block3.block)
     tester.testLauncher.lastObservableState.head shouldBe block3.block
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block3.block)
   }
@@ -375,6 +387,7 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5, parent = block1)
 
+    testChain.addHeadCheck(block2.block)
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
@@ -397,6 +410,7 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5, parent = block1)
 
+    testChain.addHeadCheck(block2.block)
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block2.block)
   }
 
@@ -419,6 +433,7 @@ class OnAttestationTests : IntegrationSpec() {
     testChain.gatherAttestations(nonHeadTuple)
     testChain.sendAttestations(testChain.mkAttestations())
 
+    testChain.addHeadCheck(prevHead)
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(prevHead)
     tester.testLauncher.lastObservableState.head shouldBe prevHead
   }
@@ -445,6 +460,7 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5, parent = prevHeadTuple)
 
+    testChain.addHeadCheck(block3.block)
     tester.testLauncher.lastObservableState.head shouldBe block3.block
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(block3.block)
 
@@ -452,11 +468,13 @@ class OnAttestationTests : IntegrationSpec() {
 
     tester.mdcControlledSchedulers.addTime(1000)
 
+    testChain.addHeadCheck(nonHeadTuple.block)
     tester.testLauncher.lastObservableState.head shouldBe nonHeadTuple.block
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(nonHeadTuple.block)
 
     tester.currentSlot = SlotNumber(6)
 
+    testChain.addHeadCheck(nonHeadTuple.block)
     tester.testLauncher.lastObservableState.head shouldBe nonHeadTuple.block
     tester.root(tester.testLauncher.lastObservableState.head) shouldBe tester.root(nonHeadTuple.block)
   }
@@ -478,16 +496,19 @@ class OnAttestationTests : IntegrationSpec() {
     val nonHeadTuple = if (prevHeadBlock == block1.block) block2 else block1
 
     tester.currentSlot = SlotNumber(4)
+    testChain.addHeadCheck(prevHeadTuple.block)
     tester.testLauncher.lastObservableState.head shouldBe prevHeadTuple.block
 
     val atts = testChain.mkAttestations(nonHeadTuple)
     testChain.sendAttestations(atts)
     tester.currentSlot = SlotNumber(5)
 
+    testChain.addHeadCheck(nonHeadTuple.block)
     tester.testLauncher.lastObservableState.head shouldBe nonHeadTuple.block
 
     val block3 = testChain.proposeBlock(4, parent = prevHeadTuple)
 
+    testChain.addHeadCheck(nonHeadTuple.block)
     tester.testLauncher.lastObservableState.head shouldBe nonHeadTuple.block
   }
 
