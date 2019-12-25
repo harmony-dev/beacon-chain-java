@@ -10,6 +10,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.Random;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.wire.WireApiSub;
@@ -25,8 +26,8 @@ public class GossipWireApiSub implements WireApiSub {
   private final Topic blocksTopic = new Topic("/eth2/beacon_block/ssz");
   private final Topic attestationsTopic = new Topic("/eth2/beacon_attestation/ssz");
   private final PubsubSubscription subscription;
-  private final EmitterProcessor<BeaconBlock> blocksStream = EmitterProcessor.create();
-  private final FluxSink<BeaconBlock> blocksSink = blocksStream.sink();
+  private final EmitterProcessor<SignedBeaconBlock> blocksStream = EmitterProcessor.create();
+  private final FluxSink<SignedBeaconBlock> blocksSink = blocksStream.sink();
   private final EmitterProcessor<Attestation> attestationsStream = EmitterProcessor.create();
   private final FluxSink<Attestation> attestationsSink = attestationsStream.sink();
 
@@ -40,8 +41,8 @@ public class GossipWireApiSub implements WireApiSub {
 
   private void onNewMessage(MessageApi msg) {
     if (msg.getTopics().contains(blocksTopic)) {
-      BeaconBlock block = sszSerializer
-          .decode(BytesValue.wrapBuffer(msg.getData()), BeaconBlock.class);
+      SignedBeaconBlock block = sszSerializer
+          .decode(BytesValue.wrapBuffer(msg.getData()), SignedBeaconBlock.class);
       blocksSink.next(block);
     } else if (msg.getTopics().contains(attestationsTopic)) {
       Attestation attest = sszSerializer
@@ -51,7 +52,7 @@ public class GossipWireApiSub implements WireApiSub {
   }
 
   @Override
-  public void sendProposedBlock(BeaconBlock block) {
+  public void sendProposedBlock(SignedBeaconBlock block) {
     byte[] bytes = sszSerializer.encode(block);
     ByteBuf byteBuf = Unpooled.wrappedBuffer(bytes);
     publisher.publish(byteBuf, blocksTopic);
@@ -65,7 +66,7 @@ public class GossipWireApiSub implements WireApiSub {
   }
 
   @Override
-  public Publisher<BeaconBlock> inboundBlocksStream() {
+  public Publisher<SignedBeaconBlock> inboundBlocksStream() {
     return blocksStream;
   }
 

@@ -1,5 +1,8 @@
 package org.ethereum.beacon.test.runner.state;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.StateTransition;
@@ -23,11 +26,13 @@ import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.state.FinalUpdatesProcessingCase;
@@ -46,10 +51,6 @@ import org.ethereum.beacon.test.type.state.SlashingsProcessingCase;
 import org.ethereum.beacon.test.type.state.field.PostField;
 import org.ethereum.beacon.test.type.state.field.PreField;
 import org.javatuples.Pair;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 /**
  * TestRunner for several types of state tests including operations processing and epoch processing
@@ -194,7 +195,7 @@ public class StateRunner implements Runner {
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
-  private Optional<String> processVoluntaryExit(VoluntaryExit voluntaryExit, BeaconState state) {
+  private Optional<String> processVoluntaryExit(SignedVoluntaryExit voluntaryExit, BeaconState state) {
     VoluntaryExitVerifier verifier = new VoluntaryExitVerifier(spec);
     return processOperation(
         voluntaryExit,
@@ -208,7 +209,8 @@ public class StateRunner implements Runner {
   private Optional<String> processBlockHeader(BeaconBlock block, BeaconState state) {
     BeaconBlockVerifier verifier = BeaconBlockVerifier.createDefault(spec);
     try {
-      VerificationResult verificationResult = verifier.verify(block, state);
+      VerificationResult verificationResult =
+          verifier.verify(new SignedBeaconBlock(block, BLSSignature.ZERO), state);
       if (verificationResult.isPassed()) {
         spec.process_block_header((MutableBeaconState) state, block);
         return Optional.empty();
@@ -291,21 +293,21 @@ public class StateRunner implements Runner {
   }
 
   private Pair<Optional<String>, BeaconState> processBlocks(
-      List<BeaconBlock> blocks, BeaconState state) {
+      List<SignedBeaconBlock> blocks, BeaconState state) {
     EmptySlotTransition preBlockTransition = StateTransitions.preBlockTransition(spec);
     PerBlockTransition blockTransition = StateTransitions.blockTransition(spec);
     BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(spec);
     BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(spec);
     BeaconStateEx stateEx = new BeaconStateExImpl(state);
     try {
-      for (BeaconBlock block : blocks) {
-        stateEx = preBlockTransition.apply(stateEx, block.getSlot());
+      for (SignedBeaconBlock block : blocks) {
+        stateEx = preBlockTransition.apply(stateEx, block.getMessage().getSlot());
         VerificationResult blockVerification = blockVerifier.verify(block, stateEx);
         if (!blockVerification.isPassed()) {
           return Pair.with(Optional.of("Invalid block"), null);
         }
-        stateEx = blockTransition.apply(stateEx, block);
-        VerificationResult stateVerification = stateVerifier.verify(stateEx, block);
+        stateEx = blockTransition.apply(stateEx, block.getMessage());
+        VerificationResult stateVerification = stateVerifier.verify(stateEx, block.getMessage());
         if (!stateVerification.isPassed()) {
           return Pair.with(Optional.of("State mismatch"), null);
         }

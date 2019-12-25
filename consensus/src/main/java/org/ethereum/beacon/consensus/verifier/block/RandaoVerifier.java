@@ -7,6 +7,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 
 /**
@@ -25,9 +26,9 @@ public class RandaoVerifier implements BeaconBlockVerifier {
   }
 
   @Override
-  public VerificationResult verify(BeaconBlock block, BeaconState state) {
+  public VerificationResult verify(SignedBeaconBlock block, BeaconState state) {
     try {
-      spec.verify_randao(state, block.getBody());
+      spec.verify_randao(state, block.getMessage().getBody());
       return VerificationResult.PASSED;
     } catch (Exception e) {
       return VerificationResult.failedResult(

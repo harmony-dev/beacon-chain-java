@@ -20,9 +20,11 @@ import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 
+@Ignore("Old fashioned beacon chain processor is broken")
 public class SyncTest {
   private static final Logger logger = LogManager.getLogger(SyncTest.class);
 

@@ -39,7 +39,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   @Override
   public Attestation attest(
       ValidatorIndex validatorIndex, CommitteeIndex index, BeaconState state, BeaconBlock head) {
-    Hash32 beaconBlockRoot = spec.signing_root(head);
+    Hash32 beaconBlockRoot = spec.hash_tree_root(head);
     EpochNumber targetEpoch = spec.get_current_epoch(state);
     Checkpoint target = getTarget(state, head, targetEpoch);
     Checkpoint source = getSource(state);
@@ -73,7 +73,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     SlotNumber epochBoundarySlot =
         spec.compute_start_slot_at_epoch(spec.compute_epoch_at_slot(state.getSlot()));
     if (epochBoundarySlot.equals(state.getSlot())) {
-      return new Checkpoint(targetEpoch, spec.signing_root(head));
+      return new Checkpoint(targetEpoch, spec.hash_tree_root(head));
     } else {
       return new Checkpoint(targetEpoch, spec.get_block_root_at_slot(state, epochBoundarySlot));
     }

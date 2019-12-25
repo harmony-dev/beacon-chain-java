@@ -142,10 +142,9 @@ public class BeaconChainSpecTest {
             emptyBlock.getSlot(),
             emptyBlock.getParentRoot(),
             emptyBlock.getStateRoot(),
-            body,
-            emptyBlock.getSignature());
+            body);
     BeaconBlockHeader header = spec.get_block_header(block);
-    assertEquals(spec.signing_root(block), spec.signing_root(header));
+    assertEquals(spec.hash_tree_root(block), spec.hash_tree_root(header));
   }
 
   @Ignore

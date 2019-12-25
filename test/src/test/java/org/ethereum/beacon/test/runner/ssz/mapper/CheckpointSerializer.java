@@ -18,7 +18,7 @@ public class CheckpointSerializer implements ObjectSerializer<Checkpoint> {
   @Override
   public ObjectNode map(Checkpoint instance) {
     ObjectNode checkpoint = mapper.createObjectNode();
-    checkpoint.put("epoch", instance.getEpoch().toString());
+    checkpoint.put("epoch", ComparableBigIntegerNode.valueOf(instance.getEpoch()));
     checkpoint.put("root", instance.getRoot().toString());
     return checkpoint;
   }

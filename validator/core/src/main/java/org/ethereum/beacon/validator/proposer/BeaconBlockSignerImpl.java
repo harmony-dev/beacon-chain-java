@@ -5,6 +5,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.validator.BeaconBlockSigner;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
@@ -27,11 +28,11 @@ public class BeaconBlockSignerImpl implements BeaconBlockSigner {
   }
 
   @Override
-  public BeaconBlock sign(BeaconBlock block, BeaconState state) {
-    Hash32 proposalRoot = spec.signing_root(block);
-    UInt64 domain = spec.get_domain(state, BEACON_PROPOSER, spec.compute_epoch_at_slot(block.getSlot()));
+  public SignedBeaconBlock sign(BeaconBlock block, BeaconState state) {
+    Hash32 proposalRoot = spec.hash_tree_root(block);
+    UInt64 domain =
+        spec.get_domain(state, BEACON_PROPOSER, spec.compute_epoch_at_slot(block.getSlot()));
     BLSSignature signature = signer.sign(proposalRoot, domain);
-
-    return BeaconBlock.Builder.fromBlock(block).withSignature(signature).build();
+    return new SignedBeaconBlock(block, signature);
   }
 }

@@ -24,12 +24,4 @@ public interface ObjectHasher<H extends BytesValue> {
    * @return calculated hash.
    */
   H getHash(Object input);
-
-  /**
-   * Calculates hash of the object skipping its last field.
-   *
-   * @param input an object.
-   * @return calculated hash.
-   */
-  H getHashTruncateLast(Object input);
 }

@@ -1,6 +1,7 @@
 package org.ethereum.beacon.chain;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 public interface MutableBeaconChain extends BeaconChain {
 
@@ -20,5 +21,5 @@ public interface MutableBeaconChain extends BeaconChain {
    * @param block a block.
    * @return whether a block was inserted or not.
    */
-  ImportResult insert(BeaconBlock block);
+  ImportResult insert(SignedBeaconBlock block);
 }

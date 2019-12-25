@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -21,14 +22,14 @@ public class ValidatorSpecTestUtil {
   public static boolean verifySignature(
       BeaconChainSpec spec,
       BeaconState initialState,
-      BeaconBlock block,
+      SignedBeaconBlock signedBlock,
       MessageSigner<BLSSignature> signer) {
 
     BLSSignature expectedSignature =
         signer.sign(
-            spec.signing_root(block),
+            spec.hash_tree_root(signedBlock.getMessage()),
             spec.get_domain(initialState, SignatureDomains.BEACON_PROPOSER));
 
-    return expectedSignature.equals(block.getSignature());
+    return expectedSignature.equals(signedBlock.getSignature());
   }
 }

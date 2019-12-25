@@ -1,6 +1,7 @@
 package org.ethereum.beacon.chain.storage;
 
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.SingleValueSource;
@@ -10,7 +11,7 @@ public interface BeaconChainStorage {
 
   BeaconBlockStorage getBlockStorage();
 
-  DataSource<Hash32, BeaconBlockHeader> getBlockHeaderStorage();
+  DataSource<Hash32, SignedBeaconBlockHeader> getBlockHeaderStorage();
 
   BeaconStateStorage getStateStorage();
 

@@ -20,6 +20,7 @@ import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
@@ -202,7 +203,7 @@ public class NodeLauncher {
     blockTree = new BeaconBlockTree(spec.getObjectHasher());
     syncQueue = new SyncQueueImpl(blockTree);
 
-    Flux<BeaconBlock> ownBlocks = Flux.empty();
+    Flux<SignedBeaconBlock> ownBlocks = Flux.empty();
     if (validatorCred != null) {
       beaconChainProposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
       beaconChainAttester = new BeaconChainAttesterImpl(spec);
@@ -233,7 +234,7 @@ public class NodeLauncher {
         .publishOn(schedulers.events().toReactor())
         .subscribe(allAttestations);
 
-    Flux<BeaconBlock> allNewBlocks = Flux.merge(ownBlocks, wireApiSub.inboundBlocksStream());
+    Flux<SignedBeaconBlock> allNewBlocks = Flux.merge(ownBlocks, wireApiSub.inboundBlocksStream());
     syncManager = new SyncManagerImpl(
         beaconChain,
         allNewBlocks.map(Feedback::of),

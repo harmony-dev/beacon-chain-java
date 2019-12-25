@@ -20,8 +20,7 @@ public class BeaconBlockTestUtil {
         SlotNumber.ZERO,
         Hash32.random(random),
         Hash32.random(random),
-        Hash32.random(random),
-        BLSSignature.wrap(Bytes96.random(random)));
+        Hash32.random(random));
   }
 
   public static BeaconBlockBody createRandomBodyWithNoOperations(

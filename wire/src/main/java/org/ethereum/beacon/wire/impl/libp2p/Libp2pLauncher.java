@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -238,7 +239,7 @@ public class Libp2pLauncher {
               block ->
                   logger.debug(
                       "received block: {}",
-                      block.toString(spec.getConstants(), null, spec::signing_root)));
+                      block.toString(spec.getConstants(), null, spec::hash_tree_root)));
 
       Flux.from(apiSub.inboundAttestationsStream())
           .subscribe(
@@ -249,11 +250,11 @@ public class Libp2pLauncher {
     }
 
     @Override
-    public void sendProposedBlock(BeaconBlock block) {
+    public void sendProposedBlock(SignedBeaconBlock block) {
       apiSub.sendProposedBlock(block);
       logger.debug(
           "gossip produced block: {}",
-          block.toString(spec.getConstants(), null, spec::signing_root));
+          block.toString(spec.getConstants(), null, spec::hash_tree_root));
     }
 
     @Override
@@ -264,7 +265,7 @@ public class Libp2pLauncher {
     }
 
     @Override
-    public Publisher<BeaconBlock> inboundBlocksStream() {
+    public Publisher<SignedBeaconBlock> inboundBlocksStream() {
       return apiSub.inboundBlocksStream();
     }
 

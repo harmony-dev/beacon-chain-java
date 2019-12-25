@@ -8,6 +8,7 @@ import org.ethereum.beacon.chain.eventbus.EventBus;
 import org.ethereum.beacon.chain.eventbus.events.AttestationBatchDequeued;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -24,8 +25,8 @@ public class NoBlockRootAttestationQueueImpl implements NoBlockRootAttestationQu
   }
 
   @Override
-  public void onBlock(BeaconBlock block) {
-    Set<Attestation> bucket = attestations.remove(spec.signing_root(block));
+  public void onBlock(SignedBeaconBlock signedBlock) {
+    Set<Attestation> bucket = attestations.remove(spec.hash_tree_root(signedBlock.getMessage()));
     if (bucket != null) {
       eventBus.publish(AttestationBatchDequeued.wrap(bucket));
     }

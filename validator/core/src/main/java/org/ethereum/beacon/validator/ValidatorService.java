@@ -1,13 +1,14 @@
 package org.ethereum.beacon.validator;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.reactivestreams.Publisher;
 
 /** Interface of validator service. */
 public interface ValidatorService {
 
-  Publisher<BeaconBlock> getProposedBlocksStream();
+  Publisher<SignedBeaconBlock> getProposedBlocksStream();
 
   Publisher<Attestation> getAttestationsStream();
 

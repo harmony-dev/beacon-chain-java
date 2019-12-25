@@ -4,6 +4,7 @@ import static org.ethereum.beacon.validator.ValidatorSpecTestUtil.verifySignatur
 import static org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil.mockProposer;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -19,10 +20,11 @@ import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -43,6 +45,7 @@ import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 
 public class BeaconChainProposerTest {
 
@@ -72,7 +75,7 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
-    BeaconBlock signedBlock =
+    SignedBeaconBlock signedBlock =
         BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState);
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
   }
@@ -97,8 +100,10 @@ public class BeaconChainProposerTest {
     List<AttesterSlashing> casperSlashings =
         AttesterSlashingTestUtil.createRandomList(
             random, spec.getConstants().getMaxAttesterSlashings(), spec.getConstants());
-    List<VoluntaryExit> voluntaryExits =
-        ExitTestUtil.createRandomList(random, spec.getConstants().getMaxVoluntaryExits());
+    List<SignedVoluntaryExit> voluntaryExits =
+        ExitTestUtil.createRandomList(random, spec.getConstants().getMaxVoluntaryExits()).stream()
+            .map(exit -> new SignedVoluntaryExit(exit, BLSSignature.wrap(Bytes96.random(random))))
+            .collect(Collectors.toList());
 
     PendingOperations pendingOperations =
         PendingOperationsTestUtil.mockPendingOperations(
@@ -112,8 +117,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block =
         proposer.propose(initialObservedState, randaoReveal);
 
-    Mockito.verify(pendingOperations)
-        .peekAggregateAttestations(spec.getConstants().getMaxAttestations(), spec.getConstants());
+    Mockito.verify(pendingOperations).getAttestations();
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());
@@ -126,11 +130,11 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
-    BeaconBlock signedBlock =
+    SignedBeaconBlock signedBlock =
         BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState);
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
 
-    Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
+    Assert.assertEquals(new HashSet<>(attestations), new HashSet<>(block.getBody().getAttestations().listCopy()));
     Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings().listCopy());
     Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings().listCopy());
     Assert.assertEquals(voluntaryExits, block.getBody().getVoluntaryExits().listCopy());
@@ -178,7 +182,7 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
-    BeaconBlock signedBlock =
+    SignedBeaconBlock signedBlock =
         BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState);
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
 

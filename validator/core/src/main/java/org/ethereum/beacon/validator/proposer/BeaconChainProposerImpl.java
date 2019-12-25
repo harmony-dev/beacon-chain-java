@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlock.Builder;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
@@ -64,7 +65,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   public BeaconBlock propose(ObservableBeaconState observableState, BLSSignature randaoReveal) {
     BeaconStateEx state = observableState.getLatestSlotState();
 
-    Hash32 parentRoot = spec.signing_root(observableState.getHead());
+    Hash32 parentRoot = spec.hash_tree_root(observableState.getHead());
     Eth1Data eth1Data = getEth1Data(state);
     BeaconBlockBody blockBody =
         getBlockBody(state, observableState.getPendingOperations(), randaoReveal, eth1Data);
@@ -75,7 +76,6 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         .withSlot(state.getSlot())
         .withParentRoot(parentRoot)
         .withStateRoot(Hash32.ZERO)
-        .withSignature(BLSSignature.ZERO)
         .withBody(blockBody);
 
     // calculate state_root
@@ -133,7 +133,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
               .collect(Collectors.toList());
     }
 
-    List<VoluntaryExit> voluntaryExits =
+    List<SignedVoluntaryExit> voluntaryExits =
         operations.peekExits(spec.getConstants().getMaxVoluntaryExits());
 
     Eth1Data latestProcessedDeposit = null; // TODO wait for spec update to include this to state

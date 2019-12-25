@@ -17,6 +17,7 @@ import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -116,7 +117,6 @@ public class ServiceFactory {
                     .withSlot(SlotNumber.ZERO)
                     .withParentRoot(Hash32.ZERO)
                     .withStateRoot(Hash32.ZERO)
-                    .withSignature(BLSSignature.ZERO)
                     .withBody(BeaconBlockBody.getEmpty(constants))
                     .build(),
                 BeaconStateEx.getEmpty(),
@@ -151,7 +151,6 @@ public class ServiceFactory {
                     .withSlot(SlotNumber.ZERO)
                     .withParentRoot(Hash32.ZERO)
                     .withStateRoot(Hash32.ZERO)
-                    .withSignature(BLSSignature.ZERO)
                     .withBody(BeaconBlockBody.getEmpty(constants))
                     .build(),
                 new BeaconStateExImpl(state.createImmutable()),
@@ -190,7 +189,6 @@ public class ServiceFactory {
                     .withSlot(SlotNumber.ZERO)
                     .withParentRoot(Hash32.ZERO)
                     .withStateRoot(Hash32.ZERO)
-                    .withSignature(BLSSignature.ZERO)
                     .withBody(BeaconBlockBody.getEmpty(constants))
                     .build(),
                 new BeaconStateExImpl(state.createImmutable()),
@@ -207,7 +205,7 @@ public class ServiceFactory {
   public static SyncManager createSyncManagerSyncNotStarted() {
     return new SyncManager() {
       @Override
-      public Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport() {
+      public Publisher<Feedback<SignedBeaconBlock>> getBlocksReadyToImport() {
         return null;
       }
 
@@ -238,12 +236,12 @@ public class ServiceFactory {
       }
 
       @Override
-      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<SignedBeaconBlock>> onlineBlocks) {
         return null;
       }
 
       @Override
-      public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+      public Disposable subscribeToFinalizedBlocks(Publisher<SignedBeaconBlock> finalBlocks) {
         return null;
       }
 
@@ -255,7 +253,7 @@ public class ServiceFactory {
   public static SyncManager createSyncManagerSyncStarted() {
     return new SyncManager() {
       @Override
-      public Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport() {
+      public Publisher<Feedback<SignedBeaconBlock>> getBlocksReadyToImport() {
         return null;
       }
 
@@ -286,12 +284,12 @@ public class ServiceFactory {
       }
 
       @Override
-      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<SignedBeaconBlock>> onlineBlocks) {
         return null;
       }
 
       @Override
-      public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+      public Disposable subscribeToFinalizedBlocks(Publisher<SignedBeaconBlock> finalBlocks) {
         return null;
       }
 
@@ -303,7 +301,7 @@ public class ServiceFactory {
   public static SyncManager createSyncManagerShortSync() {
     return new SyncManager() {
       @Override
-      public Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport() {
+      public Publisher<Feedback<SignedBeaconBlock>> getBlocksReadyToImport() {
         return null;
       }
 
@@ -334,12 +332,12 @@ public class ServiceFactory {
       }
 
       @Override
-      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<SignedBeaconBlock>> onlineBlocks) {
         return null;
       }
 
       @Override
-      public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+      public Disposable subscribeToFinalizedBlocks(Publisher<SignedBeaconBlock> finalBlocks) {
         return null;
       }
 
@@ -358,7 +356,6 @@ public class ServiceFactory {
                 .withSlot(slot)
                 .withParentRoot(Hash32.ZERO)
                 .withStateRoot(Hash32.ZERO)
-                .withSignature(BLSSignature.ZERO)
                 .withBody(BeaconBlockBody.getEmpty(constants));
 
         return builder.build();
@@ -387,17 +384,17 @@ public class ServiceFactory {
   public static PeerManager createPeerManagerWithSubMirror() {
     final WireApiSub wireApiSub =
         new WireApiSub() {
-          SimpleProcessor<BeaconBlock> blockProcessor =
-              new SimpleProcessor<BeaconBlock>(
+          SimpleProcessor<SignedBeaconBlock> blockProcessor =
+              new SimpleProcessor<>(
                   Schedulers.createDefault().newSingleThreadDaemon("blockProcessor"),
                   "blockProcessor");
           SimpleProcessor<Attestation> attestationProcessor =
-              new SimpleProcessor<Attestation>(
+              new SimpleProcessor<>(
                   Schedulers.createDefault().newSingleThreadDaemon("attestationProcessor"),
                   "attestationProcessor");
 
           @Override
-          public void sendProposedBlock(BeaconBlock block) {
+          public void sendProposedBlock(SignedBeaconBlock block) {
             blockProcessor.onNext(block);
           }
 
@@ -407,7 +404,7 @@ public class ServiceFactory {
           }
 
           @Override
-          public Publisher<BeaconBlock> inboundBlocksStream() {
+          public Publisher<SignedBeaconBlock> inboundBlocksStream() {
             return blockProcessor;
           }
 
@@ -453,7 +450,7 @@ public class ServiceFactory {
   public static MutableBeaconChain createMutableBeaconChain() {
     return new MutableBeaconChain() {
       @Override
-      public ImportResult insert(BeaconBlock block) {
+      public ImportResult insert(SignedBeaconBlock block) {
         return ImportResult.NoParent;
       }
 

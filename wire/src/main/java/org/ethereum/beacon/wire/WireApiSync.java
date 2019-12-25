@@ -11,6 +11,8 @@ import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesResponseMessage;
 import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
@@ -53,7 +55,7 @@ public interface WireApiSync {
   /**
    * Handy shortcut to download headers+bodies
    */
-  default CompletableFuture<Feedback<List<BeaconBlock>>> requestBlocks(
+  default CompletableFuture<Feedback<List<SignedBeaconBlock>>> requestBlocks(
       BlockRequestMessage requestMessage, ObjectHasher<Hash32> hasher) {
 
     BlockHeadersRequestMessage hReq = new BlockHeadersRequestMessage(
@@ -62,14 +64,14 @@ public interface WireApiSync {
         requestMessage.getCount(),
         requestMessage.getStep()
     );
-    CompletableFuture<List<BeaconBlockHeader>> headersFuture = requestBlockHeaders(
+    CompletableFuture<List<SignedBeaconBlockHeader>> headersFuture = requestBlockHeaders(
         hReq).thenApply(BlockHeadersResponseMessage::getHeaders);
 
     CompletableFuture<Feedback<List<BeaconBlockBody>>> bodiesFuture =
         headersFuture.thenCompose(
             headers -> {
               List<Hash32> blockHashes =
-                  headers.stream().map(hasher::getHashTruncateLast).collect(Collectors.toList());
+                  headers.stream().map(hasher::getHash).collect(Collectors.toList());
               return requestBlockBodies(new BlockBodiesRequestMessage(blockHashes))
                   .thenApply(bb -> bb.map(BlockBodiesResponseMessage::getBlockBodies));
             });
@@ -81,14 +83,14 @@ public interface WireApiSync {
               bodies.get().stream().collect(Collectors.toMap(hasher::getHash, b -> b, (b1, b2) -> b1));
           return bodies.delegate(
               headers.stream()
-                  .map(h -> Optional.ofNullable(bodyMap.get(h.getBodyRoot()))
-                              .map(body -> new BeaconBlock(h, body)))
+                  .map(h -> Optional.ofNullable(bodyMap.get(h.getMessage().getBodyRoot()))
+                              .map(body -> new SignedBeaconBlock(h, body)))
                   .flatMap(optionalFlatMap(b -> b))
                   .collect(Collectors.toList()));
         });
   }
 
-  default CompletableFuture<Feedback<List<BeaconBlock>>> requestRecentBlocks(
+  default CompletableFuture<Feedback<List<SignedBeaconBlock>>> requestRecentBlocks(
       List<Hash32> blockRoots, ObjectHasher<Hash32> hasher) {
     throw new UnsupportedOperationException();
   }

@@ -15,7 +15,7 @@ import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
-import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -132,14 +132,14 @@ public class BenchmarkRunner implements Runnable {
 
     List<SlotNumber> slots = new ArrayList<>();
     List<Attestation> attestations = new ArrayList<>();
-    List<BeaconBlock> blocks = new ArrayList<>();
+    List<SignedBeaconBlock> blocks = new ArrayList<>();
 
     Flux.from(instance.getSlotTicker().getTickerStream()).subscribe(slots::add);
     Flux.from(instance.getValidatorService().getAttestationsStream())
         .publishOn(instance.getSchedulers().events().toReactor())
         .subscribe(attestations::add);
     Flux.from(instance.getBeaconChain().getBlockStatesStream())
-        .subscribe(blockState -> blocks.add(blockState.getBlock()));
+        .subscribe(blockState -> blocks.add(blockState.getSignedBlock()));
 
     // show benchmark report if process exit requested by user
     Runtime.getRuntime()

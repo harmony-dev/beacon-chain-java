@@ -12,18 +12,19 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.deposit.DepositMessage;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -48,23 +49,14 @@ public interface BlockProcessing extends HelperFunction {
       assert block.slot == state.slot */
     assertTrue(block.getSlot().equals(state.getSlot()));
     /* Verify that the parent matches
-      assert block.previous_block_root == signing_root(state.latest_block_header) */
-    assertTrue(block.getParentRoot().equals(signing_root(state.getLatestBlockHeader())));
+      assert block.previous_block_root == hash_tree_root(state.latest_block_header) */
+    assertTrue(block.getParentRoot().equals(hash_tree_root(state.getLatestBlockHeader())));
 
     /* Verify proposer is not slashed
     proposer = state.validator_registry[get_beacon_proposer_index(state)]
     assert not proposer.slashed */
     ValidatorRecord proposer = state.getValidators().get(get_beacon_proposer_index(state));
     assertTrue(!proposer.getSlashed());
-
-    /* Verify proposer signature
-    assert bls_verify(proposer.pubkey, signing_root(block), block.signature, get_domain(state, DOMAIN_BEACON_PROPOSER)) */
-    assertTrue(bls_verify(
-        proposer.getPubKey(),
-        signing_root(block),
-        block.getSignature(),
-        get_domain(state, BEACON_PROPOSER)
-    ));
   }
 
   default void process_block_header(MutableBeaconState state, BeaconBlock block) {
@@ -78,8 +70,7 @@ public interface BlockProcessing extends HelperFunction {
         block.getSlot(),
         block.getParentRoot(),
         Hash32.ZERO,
-        hash_tree_root(block.getBody()),
-        BLSSignature.ZERO));
+        hash_tree_root(block.getBody())));
   }
 
   default void verify_randao(BeaconState state, BeaconBlockBody body) {
@@ -137,12 +128,13 @@ public interface BlockProcessing extends HelperFunction {
 
     /*    # Verify slots match
     assert proposer_slashing.header_1.slot == proposer_slashing.header_2.slot */
-    assertTrue(proposer_slashing.getHeader1().getSlot()
-        .equals(proposer_slashing.getHeader2().getSlot()));
+    assertTrue(proposer_slashing.getSignedHeader1().getMessage().getSlot()
+        .equals(proposer_slashing.getSignedHeader2().getMessage().getSlot()));
 
     /* But the headers are different
       assert proposer_slashing.header_1 != proposer_slashing.header_2 */
-    assertTrue(!proposer_slashing.getHeader1().equals(proposer_slashing.getHeader2()));
+    assertTrue(!proposer_slashing.getSignedHeader1().getMessage()
+        .equals(proposer_slashing.getSignedHeader2().getMessage()));
 
     /* Check proposer is slashable
     assert is_slashable_validator(proposer, get_current_epoch(state)) */
@@ -151,13 +143,13 @@ public interface BlockProcessing extends HelperFunction {
     /* Signatures are valid
     for header in (proposer_slashing.header_1, proposer_slashing.header_2):
         domain = get_domain(state, DOMAIN_BEACON_PROPOSER, compute_epoch_of_slot(header.slot))
-        assert bls_verify(proposer.pubkey, signing_root(header), header.signature, domain) */
-    Stream.of(proposer_slashing.getHeader1(), proposer_slashing.getHeader2()).forEach(header -> {
-      UInt64 domain = get_domain(state, BEACON_PROPOSER, compute_epoch_at_slot(header.getSlot()));
+        assert bls_verify(proposer.pubkey, hash_tree_root(header), header.signature, domain) */
+    Stream.of(proposer_slashing.getSignedHeader1(), proposer_slashing.getSignedHeader2()).forEach(signed_header -> {
+      UInt64 domain = get_domain(state, BEACON_PROPOSER, compute_epoch_at_slot(signed_header.getMessage().getSlot()));
       assertTrue(bls_verify(
           proposer.getPubKey(),
-          signing_root(header),
-          header.getSignature(),
+          hash_tree_root(signed_header.getMessage()),
+          signed_header.getSignature(),
           domain
       ));
     });
@@ -217,13 +209,17 @@ public interface BlockProcessing extends HelperFunction {
   default boolean verify_attestation(BeaconState state, Attestation attestation) {
     /* data = attestation.data
        assert data.index < get_committee_count_at_slot(state, data.slot)
-       assert data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)) */
+       assert data.target.epoch in (get_previous_epoch(state), get_current_epoch(state))
+       assert data.target.epoch == compute_epoch_at_slot(data.slot) */
     AttestationData data = attestation.getData();
     if (!data.getIndex().less(new CommitteeIndex(get_committee_count_at_slot(state, data.getSlot())))) {
       return false;
     }
     if (!data.getTarget().getEpoch().equals(get_previous_epoch(state))
         && !data.getTarget().getEpoch().equals(get_current_epoch(state))) {
+      return false;
+    }
+    if (!data.getTarget().getEpoch().equals(compute_epoch_at_slot(data.getSlot()))) {
       return false;
     }
 
@@ -329,14 +325,15 @@ public interface BlockProcessing extends HelperFunction {
          Invalid signatures are allowed by the deposit contract,
          and hence included on-chain, but must not be processed.
          Note: deposits are valid across forks, hence the deposit domain is retrieved directly from `compute_domain` */
-      if (isBlsVerifyProofOfPossession() &&
-          !bls_verify(
-              pubkey,
-              signing_root(deposit.getData()),
-              deposit.getData().getSignature(),
-              compute_domain(SignatureDomains.DEPOSIT))
-      ) {
-        return;
+      if (isBlsVerifyProofOfPossession()) {
+        DepositMessage deposit_message = DepositMessage.from(deposit.getData());
+        if (!bls_verify(
+            pubkey,
+            hash_tree_root(deposit_message),
+            deposit.getData().getSignature(),
+            compute_domain(SignatureDomains.DEPOSIT))) {
+          return;
+        }
       }
 
       /* Add validator and balance entries
@@ -372,7 +369,9 @@ public interface BlockProcessing extends HelperFunction {
     }
   }
 
-  default void verify_voluntary_exit(BeaconState state, VoluntaryExit exit) {
+  default void verify_voluntary_exit(BeaconState state, SignedVoluntaryExit signed_exit) {
+    VoluntaryExit exit = signed_exit.getMessage();
+
     checkIndexRange(state, exit.getValidatorIndex());
     ValidatorRecord validator = state.getValidators().get(exit.getValidatorIndex());
 
@@ -395,9 +394,9 @@ public interface BlockProcessing extends HelperFunction {
 
     /* Verify signature
     domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, exit.epoch)
-    assert bls_verify(validator.pubkey, signing_root(exit), exit.signature, domain) */
+    assert bls_verify(validator.pubkey, hash_tree_root(exit), exit.signature, domain) */
     UInt64 domain = get_domain(state, SignatureDomains.VOLUNTARY_EXIT, exit.getEpoch());
-    assertTrue(bls_verify(validator.getPubKey(), signing_root(exit), exit.getSignature(), domain));
+    assertTrue(bls_verify(validator.getPubKey(), hash_tree_root(exit), signed_exit.getSignature(), domain));
   }
 
   /*
@@ -405,8 +404,8 @@ public interface BlockProcessing extends HelperFunction {
     Process ``VoluntaryExit`` transaction.
     """
    */
-  default void process_voluntary_exit(MutableBeaconState state, VoluntaryExit exit) {
-    initiate_validator_exit(state, exit.getValidatorIndex());
+  default void process_voluntary_exit(MutableBeaconState state, SignedVoluntaryExit exit) {
+    initiate_validator_exit(state, exit.getMessage().getValidatorIndex());
   }
 
   /*

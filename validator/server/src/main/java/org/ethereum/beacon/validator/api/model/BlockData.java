@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 

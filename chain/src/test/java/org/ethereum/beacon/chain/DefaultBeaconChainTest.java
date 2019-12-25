@@ -1,5 +1,9 @@
 package org.ethereum.beacon.chain;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
@@ -22,6 +26,7 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -33,11 +38,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.stream.IntStream;
 
 public class DefaultBeaconChainTest {
 
@@ -57,7 +57,7 @@ public class DefaultBeaconChainTest {
     beaconChain.init();
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
     Assert.assertEquals(
-        spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
+        spec.getConstants().getGenesisSlot(), initialTuple.getSignedBlock().getMessage().getSlot());
 
     IntStream.range(0, 10)
         .forEach(
@@ -65,31 +65,31 @@ public class DefaultBeaconChainTest {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
               schedulers.setCurrentTime(
                   spec.get_slot_start_time(recentlyProcessed.getState(),
-                      recentlyProcessed.getBlock().getSlot().increment()).getValue()*1000);
-              BeaconBlock aBlock =
+                      recentlyProcessed.getSignedBlock().getMessage().getSlot().increment()).getValue()*1000);
+              SignedBeaconBlock aBlock =
                   createBlock(
                       recentlyProcessed, spec, schedulers.getCurrentTime(), perSlotTransition);
               Assert.assertEquals(ImportResult.OK, beaconChain.insert(aBlock));
-              Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
+              Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getSignedBlock());
 
               System.out.println("Inserted block: " + (idx + 1));
             });
   }
 
-  private BeaconBlock createBlock(
+  private SignedBeaconBlock createBlock(
       BeaconTuple parent,
       BeaconChainSpec spec, long currentTime,
       StateTransition<BeaconStateEx> perSlotTransition) {
     BeaconBlock block =
         new BeaconBlock(
             spec.get_current_slot(parent.getState(), currentTime),
-            spec.signing_root(parent.getBlock()),
+            spec.hash_tree_root(parent.getSignedBlock().getMessage()),
             Hash32.ZERO,
-            BeaconBlockBody.getEmpty(spec.getConstants()),
-            BLSSignature.ZERO);
+            BeaconBlockBody.getEmpty(spec.getConstants()));
     BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
 
-    return block.withStateRoot(spec.hash_tree_root(state));
+    return new SignedBeaconBlock(
+        block.withStateRoot(spec.hash_tree_root(state)), BLSSignature.ZERO);
   }
 
   private MutableBeaconChain createBeaconChain(
@@ -145,7 +145,7 @@ public class DefaultBeaconChainTest {
 
     beaconChain.init();
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
-    Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
+    Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getSignedBlock().getMessage().getSlot());
 
     BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
 
@@ -158,7 +158,7 @@ public class DefaultBeaconChainTest {
     long nextSlotTime =
         spec.get_slot_start_time(recentlyProcessed.getState(), nextSlot).getMillis().getValue() + 1;
 
-    BeaconBlock aBlock =
+    SignedBeaconBlock aBlock =
             createBlock(recentlyProcessed, spec, nextSlotTime, perSlotTransition);
 
     Assert.assertEquals(ImportResult.ExpiredBlock, beaconChain.insert(aBlock));

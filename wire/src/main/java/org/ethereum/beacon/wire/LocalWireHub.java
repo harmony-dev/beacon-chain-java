@@ -5,7 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.reactivestreams.Processor;
@@ -15,7 +15,7 @@ import reactor.core.publisher.Flux;
 
 public class LocalWireHub {
   private class WireImpl implements WireApiSub {
-    Processor<BeaconBlock, BeaconBlock> blocks =  DirectProcessor.create();
+    Processor<SignedBeaconBlock, SignedBeaconBlock> blocks =  DirectProcessor.create();
     Processor<Attestation, Attestation> attestations =  DirectProcessor.create();
     String name;
     long inboundDelay;
@@ -28,7 +28,7 @@ public class LocalWireHub {
     }
 
     @Override
-    public void sendProposedBlock(BeaconBlock block) {
+    public void sendProposedBlock(SignedBeaconBlock block) {
       if (outboundDelay == 0) {
         sendProposedBlockImpl(block);
       } else {
@@ -37,7 +37,7 @@ public class LocalWireHub {
       }
     }
 
-    public void sendProposedBlockImpl(BeaconBlock block) {
+    public void sendProposedBlockImpl(SignedBeaconBlock block) {
       logger.accept("Node '" + name + "' => Block: " + block);
       for (WireImpl node : peers) {
         if (node != this) {
@@ -66,7 +66,7 @@ public class LocalWireHub {
     }
 
     @Override
-    public Publisher<BeaconBlock> inboundBlocksStream() {
+    public Publisher<SignedBeaconBlock> inboundBlocksStream() {
       if (inboundDelay == 0) {
         return blocks;
       } else {

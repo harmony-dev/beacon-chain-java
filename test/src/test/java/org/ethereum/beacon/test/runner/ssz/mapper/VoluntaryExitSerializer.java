@@ -1,6 +1,7 @@
 package org.ethereum.beacon.test.runner.ssz.mapper;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -21,7 +22,6 @@ public class VoluntaryExitSerializer implements ObjectSerializer<VoluntaryExit> 
     ObjectNode voluntaryExit = mapper.createObjectNode();
     voluntaryExit.set("epoch", ComparableBigIntegerNode.valueOf(instance.getEpoch()));
     voluntaryExit.set("validator_index", ComparableBigIntegerNode.valueOf(instance.getValidatorIndex()));
-    voluntaryExit.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return voluntaryExit;
   }
 }

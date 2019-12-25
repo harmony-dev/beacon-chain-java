@@ -5,6 +5,8 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
+import org.ethereum.beacon.core.types.BLSSignature;
 
 /**
  * Verifies block header.
@@ -22,9 +24,12 @@ public class BlockHeaderVerifier implements BeaconBlockVerifier {
   }
 
   @Override
-  public VerificationResult verify(BeaconBlock block, BeaconState state) {
+  public VerificationResult verify(SignedBeaconBlock block, BeaconState state) {
     try {
-      spec.verify_block_header(state, block);
+      if (!block.getSignature().equals(BLSSignature.ZERO)) {
+        spec.verify_block_signature(state, block);
+      }
+      spec.verify_block_header(state, block.getMessage());
       return VerificationResult.PASSED;
     } catch (Exception e) {
       return VerificationResult.failedResult(

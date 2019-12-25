@@ -5,7 +5,9 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.types.BLSSignature;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /** Utility functions to initialize storage from an initial state. */
@@ -19,7 +21,7 @@ public class StorageUtils {
     BeaconBlock initialGenesis = spec.get_empty_block();
     Hash32 initialStateRoot = spec.hash_tree_root(initialState);
     BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);
-    return BeaconTuple.of(genesis, initialState);
+    return BeaconTuple.of(new SignedBeaconBlock(genesis, BLSSignature.ZERO), initialState);
   }
 
   /**
@@ -30,9 +32,9 @@ public class StorageUtils {
       BeaconChainStorage storage, BeaconChainSpec spec, BeaconStateEx initialState) {
     assert storage.getTupleStorage().isEmpty();
     BeaconTuple tuple = createInitialBeaconTuple(spec, initialState);
-    Hash32 genesisRoot = spec.signing_root(tuple.getBlock());
-    storage.getStateStorage().put(tuple.getBlock().getStateRoot(), tuple.getState());
-    storage.getBlockStorage().put(genesisRoot, tuple.getBlock());
+    Hash32 genesisRoot = spec.hash_tree_root(tuple.getSignedBlock().getMessage());
+    storage.getStateStorage().put(tuple.getSignedBlock().getMessage().getStateRoot(), tuple.getState());
+    storage.getBlockStorage().put(genesisRoot, tuple.getSignedBlock());
     Checkpoint justifiedChkpt =
         new Checkpoint(initialState.getCurrentJustifiedCheckpoint().getEpoch(), genesisRoot);
     storage.getJustifiedStorage().set(justifiedChkpt);

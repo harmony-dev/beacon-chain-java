@@ -2,6 +2,7 @@ package org.ethereum.beacon.test.runner.ssz.mapper;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class BlockSerializer implements ObjectSerializer<BeaconBlock> {
@@ -22,10 +23,9 @@ public class BlockSerializer implements ObjectSerializer<BeaconBlock> {
   public ObjectNode map(BeaconBlock instance) {
     ObjectNode beaconBlock = mapper.createObjectNode();
     beaconBlock.set("slot", ComparableBigIntegerNode.valueOf(instance.getSlot()));
-    beaconBlock.put("previous_block_root", instance.getParentRoot().toString());
+    beaconBlock.put("parent_root", instance.getParentRoot().toString());
     beaconBlock.put("state_root", instance.getStateRoot().toString());
     beaconBlock.set("body", blockBodySerializer.map(instance.getBody()));
-    beaconBlock.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return beaconBlock;
   }
 }

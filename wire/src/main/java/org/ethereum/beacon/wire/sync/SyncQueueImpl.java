@@ -4,6 +4,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.Feedback;
 import org.reactivestreams.Publisher;
@@ -18,9 +19,9 @@ public class SyncQueueImpl implements SyncQueue {
   private final int maxBlocksRequest;
   private final int maxHeightFromFinal;
 
-  private final ReplayProcessor<Feedback<BeaconBlock>> readyBlocks = ReplayProcessor.cacheLast();
+  private final ReplayProcessor<Feedback<SignedBeaconBlock>> readyBlocks = ReplayProcessor.cacheLast();
   private final ReplayProcessor<Flux<BlockRequest>> blockRequests = ReplayProcessor.cacheLast();
-  private BeaconBlock finalBlock;
+  private SignedBeaconBlock finalBlock;
 
   public SyncQueueImpl(BeaconBlockTree blockTree, int maxBlocksRequest, int maxHeightFromFinal) {
     this.blockTree = blockTree;
@@ -38,34 +39,34 @@ public class SyncQueueImpl implements SyncQueue {
   }
 
   @Override
-  public Publisher<Feedback<BeaconBlock>> getBlocksStream() {
+  public Publisher<Feedback<SignedBeaconBlock>> getBlocksStream() {
     return readyBlocks;
   }
 
   protected Flux<BlockRequest> createBlockRequests() {
     return Flux.generate(
-        () -> finalBlock.getSlot(),
+        () -> finalBlock.getMessage().getSlot(),
         (slot, sink) -> {
-          if (slot.greater(finalBlock.getSlot().plus(maxHeightFromFinal))) {
-            slot = finalBlock.getSlot();
+          if (slot.greater(finalBlock.getMessage().getSlot().plus(maxHeightFromFinal))) {
+            slot = finalBlock.getMessage().getSlot();
           }
           sink.next(new BlockRequest(slot, null, maxBlocksRequest, false, 0));
           return slot.plus(maxBlocksRequest);
         });
   }
 
-  protected void onNewFinalBlock(BeaconBlock finalBlock) {
+  protected void onNewFinalBlock(SignedBeaconBlock finalBlock) {
     logger.debug(() -> "New final block: " + finalBlock);
     blockTree.setTopBlock(Feedback.of(finalBlock));
     this.finalBlock = finalBlock;
     blockRequests.onNext(createBlockRequests());
   }
 
-  protected void onInvalidBlock(BeaconBlock block) {
+  protected void onInvalidBlock(SignedBeaconBlock block) {
     logger.warn("Invalid block received: " + block);
   }
 
-  protected void onNewBlock(Feedback<BeaconBlock> block) {
+  protected void onNewBlock(Feedback<SignedBeaconBlock> block) {
     block.getFeedback().whenComplete((v,t) -> {
       if (t != null) {
         onInvalidBlock(block.get());
@@ -77,12 +78,12 @@ public class SyncQueueImpl implements SyncQueue {
   }
 
   @Override
-  public Disposable subscribeToFinalBlocks(Flux<BeaconBlock> finalBlockRootStream) {
+  public Disposable subscribeToFinalBlocks(Flux<SignedBeaconBlock> finalBlockRootStream) {
     return Flux.from(finalBlockRootStream).subscribe(this::onNewFinalBlock);
   }
 
   @Override
-  public Disposable subscribeToNewBlocks(Publisher<Feedback<List<BeaconBlock>>> blocksStream) {
+  public Disposable subscribeToNewBlocks(Publisher<Feedback<List<SignedBeaconBlock>>> blocksStream) {
     return Flux.from(blocksStream)
         .flatMap(resp -> Flux.fromStream(resp.get().stream().map(resp::delegate)))
         .subscribe(this::onNewBlock);

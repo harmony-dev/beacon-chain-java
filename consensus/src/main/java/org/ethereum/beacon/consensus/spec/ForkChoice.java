@@ -1,11 +1,15 @@
 package org.ethereum.beacon.consensus.spec;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.Checkpoint;
@@ -28,7 +32,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
   /*
    def get_genesis_store(genesis_state: BeaconState) -> Store:
      genesis_block = BeaconBlock(state_root=hash_tree_root(genesis_state))
-     root = signing_root(genesis_block)
+     root = hash_tree_root(genesis_block)
      justified_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
      finalized_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
      return Store(
@@ -44,7 +48,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
   */
   default <T extends Store> T get_genesis_store(BeaconState genesisState, T store) {
     BeaconBlock genesisBlock = get_empty_block().withStateRoot(hash_tree_root(genesisState));
-    Hash32 root = signing_root(genesisBlock);
+    Hash32 root = hash_tree_root(genesisBlock);
     Checkpoint justifiedCheckpoint = new Checkpoint(getConstants().getGenesisEpoch(), root);
     Checkpoint finalizedCheckpoint = new Checkpoint(getConstants().getGenesisEpoch(), root);
 
@@ -124,6 +128,63 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
         .reduce(Gwei.ZERO, Gwei::plus);
   }
 
+  default boolean filter_block_tree(Store store, Hash32 block_root, Map<Hash32, BeaconBlock> blocks) {
+    BeaconBlock block = store.getBlock(block_root).orElseThrow(SpecAssertionFailed::new);
+    List<Hash32> children = store.getChildren(block_root);
+
+    // If any children branches contain expected finalized/justified checkpoints,
+    // add to filtered block-tree and signal viability to parent.
+    if (!children.isEmpty()) {
+      List<Boolean> filter_block_tree_result =
+          children.stream()
+              .map(child -> filter_block_tree(store, child, blocks))
+              .collect(Collectors.toList());
+      if (filter_block_tree_result.stream().anyMatch(result -> result)) {
+        blocks.put(block_root, block);
+        return true;
+      }
+
+      return false;
+    }
+
+    // If leaf block, check finalized/justified checkpoints as matching latest.
+    BeaconState head_state = store.getState(block_root).orElseThrow(SpecAssertionFailed::new);
+
+    boolean correct_justified =
+        store.getJustifiedCheckpoint().getEpoch().equals(getConstants().getGenesisEpoch())
+            || head_state.getCurrentJustifiedCheckpoint().equals(store.getJustifiedCheckpoint());
+    boolean correct_finalized =
+        store.getFinalizedCheckpoint().getEpoch().equals(getConstants().getGenesisEpoch())
+            || head_state.getFinalizedCheckpoint().equals(store.getFinalizedCheckpoint());
+
+    // If expected finalized/justified, add to viable block-tree and signal viability to parent.
+    if (correct_justified && correct_finalized) {
+      blocks.put(block_root, block);
+      return true;
+    }
+
+    // Otherwise, branch not viable
+    return false;
+  }
+
+  /*
+    def get_filtered_block_tree(store: Store) -> Dict[Root, BeaconBlock]:
+      """
+      Retrieve a filtered block true from ``store``, only returning branches
+      whose leaf state's justified/finalized info agrees with that in ``store``.
+      """
+      base = store.justified_checkpoint.root
+      blocks: Dict[Root, BeaconBlock] = {}
+      filter_block_tree(store, base, blocks)
+      return blocks
+   */
+  default Map<Hash32, BeaconBlock> get_filtered_block_tree(Store store) {
+    Hash32 base = store.getJustifiedCheckpoint().getRoot();
+    Map<Hash32, BeaconBlock> blocks = new HashMap<>();
+    filter_block_tree(store, base, blocks);
+    return blocks;
+  }
+
   /*
    def get_head(store: Store) -> Hash:
      # Execute the LMD-GHOST fork choice
@@ -140,10 +201,18 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
          head = max(children, key=lambda root: (get_latest_attesting_balance(store, root), root))
   */
   default Hash32 get_head(Store store) {
+    // Get filtered block tree that only includes viable branches
+    Map<Hash32, BeaconBlock> blocks = get_filtered_block_tree(store);
     // Execute the LMD-GHOST fork choice
     Hash32 head = store.getJustifiedCheckpoint().getRoot();
+    SlotNumber justified_slot = compute_start_slot_at_epoch(store.getJustifiedCheckpoint().getEpoch());
     while (true) {
-      List<Hash32> children = store.getChildren(head);
+      Hash32 finalHead = head;
+      List<Hash32> children =
+          blocks.keySet().stream()
+              .filter(root -> blocks.get(root).getParentRoot().equals(finalHead))
+              .filter(root -> blocks.get(root).getSlot().greater(justified_slot))
+              .collect(Collectors.toList());
       if (children.isEmpty()) {
         return head;
       }
@@ -218,16 +287,23 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
   }
 
   /*
+    def get_slots_since_genesis(store: Store) -> int:
+      return (store.time - store.genesis_time) // SECONDS_PER_SLOT
+   */
+  default SlotNumber get_slots_since_genesis(Store store) {
+    return SlotNumber.castFrom(
+        store
+            .getTime()
+            .minus(store.getGenesisTime())
+            .dividedBy(getConstants().getSecondsPerSlot()));
+  }
+
+  /*
    def get_current_slot(store: Store) -> Slot:
-     return Slot((store.time - store.genesis_time) // SECONDS_PER_SLOT)
+      return Slot(GENESIS_SLOT + get_slots_since_genesis(store))
   */
   default SlotNumber get_current_slot(Store store) {
-    return SlotNumber.castFrom(
-            store
-                .getTime()
-                .minus(store.getGenesisTime())
-                .dividedBy(getConstants().getSecondsPerSlot()))
-        .plus(getConstants().getGenesisSlot());
+    return getConstants().getGenesisSlot().plus(get_slots_since_genesis(store));
   }
 
   /*
@@ -316,10 +392,10 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     # Blocks cannot be in the future. If they are, their consideration must be delayed until the are in the past.
     assert store.time >= pre_state.genesis_time + block.slot * SECONDS_PER_SLOT
     # Add new block to the store
-    store.blocks[signing_root(block)] = block
+    store.blocks[hash_tree_root(block)] = block
     # Check block is a descendant of the finalized block
     assert (
-        get_ancestor(store, signing_root(block), store.blocks[store.finalized_checkpoint.root].slot) ==
+        get_ancestor(store, hash_tree_root(block), store.blocks[store.finalized_checkpoint.root].slot) ==
         store.finalized_checkpoint.root
     )
     # Check that block is later than the finalized epoch slot
@@ -327,7 +403,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     # Check the block is valid and compute the post-state
     state = state_transition(pre_state, block, True)
     # Add new state for this block to the store
-    store.block_states[signing_root(block)] = state
+    store.block_states[hash_tree_root(block)] = state
 
     # Update justified checkpoint
     if state.current_justified_checkpoint.epoch > store.justified_checkpoint.epoch:
@@ -339,29 +415,24 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     if state.finalized_checkpoint.epoch > store.finalized_checkpoint.epoch:
         store.finalized_checkpoint = state.finalized_checkpoint
    */
-  default void on_block(Store store, BeaconBlock block) {
+  default void on_block(Store store, SignedBeaconBlock signed_block) {
+    BeaconBlock block = signed_block.getMessage();
     // # Make a copy of the state to avoid mutability issues
     assertThat(store.getBlock(block.getParentRoot()).isPresent(), NoParentBlockException.class);
     MutableBeaconState pre_state = store.getState(block.getParentRoot()).get().createMutableCopy();
     // # Blocks cannot be in the future. If they are, their consideration must be delayed until the
     // are in the past.
     assertThat(
-        store
-            .getTime()
-            .greaterEqual(
-                pre_state
-                    .getGenesisTime()
-                    .plus(getConstants().getSecondsPerSlot().times(block.getSlot()))),
-        BlockIsInTheFutureException.class);
+        get_current_slot(store).greaterEqual(block.getSlot()), BlockIsInTheFutureException.class);
 
     // # Add new block to the store
-    store.setBlock(signing_root(block), block);
+    store.setBlock(hash_tree_root(block), block);
 
     // # Check block is a descendant of the finalized block
     assertTrue(
         get_ancestor(
                 store,
-                signing_root(block),
+                hash_tree_root(block),
                 store.getBlock(store.getFinalizedCheckpoint().getRoot()).get().getSlot())
             .get()
             .equals(store.getFinalizedCheckpoint().getRoot()));
@@ -371,16 +442,19 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
             .getSlot()
             .greater(compute_start_slot_at_epoch(store.getFinalizedCheckpoint().getEpoch())));
     // # Check the block is valid and compute the post-state
-    BeaconState state = state_transition(pre_state, block, true).createImmutable();
+    BeaconState state = state_transition(pre_state, signed_block, true).createImmutable();
     // # Add new state for this block to the store
-    store.setState(signing_root(block), state);
+    store.setState(hash_tree_root(block), state);
 
     // # Update justified checkpoint
     if (state
         .getCurrentJustifiedCheckpoint()
         .getEpoch()
         .greater(store.getJustifiedCheckpoint().getEpoch())) {
-      store.setBestJustifiedCheckpoint(state.getCurrentJustifiedCheckpoint());
+      if (state.getCurrentJustifiedCheckpoint().getEpoch()
+          .greater(store.getBestJustifiedCheckpoint().getEpoch())) {
+        store.setBestJustifiedCheckpoint(state.getCurrentJustifiedCheckpoint());
+      }
       if (should_update_justified_checkpoint(store, state.getCurrentJustifiedCheckpoint())) {
         store.setJustifiedCheckpoint(state.getCurrentJustifiedCheckpoint());
       }
@@ -451,6 +525,8 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
             : getConstants().getGenesisEpoch();
     // assert target.epoch in [current_epoch, previous_epoch]
     assertTrue(target.getEpoch().equals(current_epoch) || target.getEpoch().equals(previous_epoch));
+    // assert target.epoch == compute_epoch_at_slot(attestation.data.slot)
+    assertTrue(target.getEpoch().equals(compute_epoch_at_slot(attestation.getData().getSlot())));
     // # Cannot calculate the current shuffling if have not seen the target
     // assert target.root in store.blocks
     assertThat(store.getBlock(target.getRoot()).isPresent(), NoTargetRootException.class);
@@ -458,18 +534,9 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     // arrives
     // base_state = store.block_states[target.root].copy()
     MutableBeaconState base_state = store.getState(target.getRoot()).get().createMutableCopy();
-    // assert store.time >= base_state.genesis_time + compute_start_slot_at_epoch(target.epoch) *
-    // SECONDS_PER_SLOT
+    // assert get_current_slot(store) >= compute_start_slot_at_epoch(target.epoch)
     assertThat(
-        store
-            .getTime()
-            .greaterEqual(
-                base_state
-                    .getGenesisTime()
-                    .plus(
-                        getConstants()
-                            .getSecondsPerSlot()
-                            .times(compute_start_slot_at_epoch(target.getEpoch())))),
+        get_current_slot(store).greaterEqual(compute_start_slot_at_epoch(target.getEpoch())),
         TargetEpochIsInTheFutureException.class);
     // # Attestations must be for a known block. If block is unknown, delay consideration until the
     // block is found
@@ -492,18 +559,9 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     BeaconState target_state = store.getCheckpointState(target).get();
     // # Attestations can only affect the fork choice of subsequent slots.
     // # Delay consideration in the fork choice until their slot is in the past.
-    // assert store.time >= target_state.genesis_time + (attestation.data.slot + 1) *
-    // SECONDS_PER_SLOT
+    // assert get_current_slot(store) >= attestation.data.slot + 1
     assertThat(
-        store
-            .getTime()
-            .greaterEqual(
-                target_state
-                    .getGenesisTime()
-                    .plus(
-                        getConstants()
-                            .getSecondsPerSlot()
-                            .times(attestation.getData().getSlot().increment()))),
+        get_current_slot(store).greaterEqual(attestation.getData().getSlot().increment()),
         EarlyForkChoiceConsiderationException.class);
     // # Get state at the `target` to validate attestation and calculate the committees
     // indexed_attestation = get_indexed_attestation(target_state, attestation)

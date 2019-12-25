@@ -15,7 +15,7 @@ public class AttesterSlashingListVerifier extends OperationListVerifier<Attester
       OperationVerifier<AttesterSlashing> operationVerifier, SpecConstants specConstants) {
     super(
         operationVerifier,
-        block -> block.getBody().getAttesterSlashings(),
+        block -> block.getMessage().getBody().getAttesterSlashings(),
         specConstants.getMaxAttesterSlashings());
   }
 

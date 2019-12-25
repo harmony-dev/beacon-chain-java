@@ -15,6 +15,7 @@ import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 /** A common interface for various {@link BeaconBlock} verifications defined by the spec. */
 public interface BeaconBlockVerifier {
@@ -42,5 +43,5 @@ public interface BeaconBlockVerifier {
    *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#per-slot-processing">Per-slot
    *     processing</a> in the spec.
    */
-  VerificationResult verify(BeaconBlock block, BeaconState state);
+  VerificationResult verify(SignedBeaconBlock block, BeaconState state);
 }

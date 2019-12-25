@@ -45,6 +45,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
@@ -83,7 +84,7 @@ public class Launcher {
   private InMemoryDatabase db;
   private BeaconChainStorage beaconChainStorage;
   private MutableBeaconChain beaconChain;
-  private Publisher<BeaconBlock> importedBlockStream;
+  private Publisher<SignedBeaconBlock> importedBlockStream;
   private SlotTicker slotTicker;
   private Publisher<SlotNumber> slotStream;
   private ObservableStateProcessor observableStateProcessor;
@@ -186,7 +187,7 @@ public class Launcher {
             stateVerifier,
             beaconChainStorage,
             schedulers);
-    importedBlockStream = Flux.from(beaconChain.getBlockStatesStream()).map(BeaconTuple::getBlock);
+    importedBlockStream = Flux.from(beaconChain.getBlockStatesStream()).map(BeaconTuple::getSignedBlock);
     beaconChain.init();
 
     slotTicker =
@@ -259,7 +260,7 @@ public class Launcher {
 
     DirectProcessor<ObservableBeaconState> stateFlux = DirectProcessor.create();
     stateFlux.publishOn(schedulers.events().toReactor());
-    DirectProcessor<BeaconBlock> importedBlockFlux = DirectProcessor.create();
+    DirectProcessor<SignedBeaconBlock> importedBlockFlux = DirectProcessor.create();
     importedBlockFlux.publishOn(schedulers.events().toReactor());
 
     observableStateStream = stateFlux;
@@ -429,7 +430,7 @@ public class Launcher {
     return beaconChain;
   }
 
-  public Publisher<BeaconBlock> getImportedBlockStream() {
+  public Publisher<SignedBeaconBlock> getImportedBlockStream() {
     return importedBlockStream;
   }
 

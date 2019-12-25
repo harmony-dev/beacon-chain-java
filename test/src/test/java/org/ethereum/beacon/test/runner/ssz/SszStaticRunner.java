@@ -148,12 +148,10 @@ public class SszStaticRunner implements Runner {
     }
     // XXX: expected goes second as our constructed node contains with overridden `equals` operators
     // which should be used in comparison
-    assertEquals(simplified, expectedValue);
-    assertHexStrings(testCase.getRoot(), spec.hash_tree_root(fromSerialized).toString());
-    if (testCase.getSigningRoot() != null) {
-      assertHexStrings(testCase.getSigningRoot(), spec.signing_root(fromSerialized).toString());
+    Optional<String> result = assertEquals(simplified, expectedValue);
+    if (result.isPresent()) {
+      return result;
     }
-
-    return Optional.empty();
+    return assertHexStrings(testCase.getRoot(), spec.hash_tree_root(fromSerialized).toString());
   }
 }

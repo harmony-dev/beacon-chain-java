@@ -12,7 +12,7 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 public class DepositListVerifier extends OperationListVerifier<Deposit> {
 
   public DepositListVerifier(OperationVerifier<Deposit> operationVerifier, SpecConstants specConstants) {
-    super(operationVerifier, block -> block.getBody().getDeposits(), specConstants.getMaxDeposits());
+    super(operationVerifier, block -> block.getMessage().getBody().getDeposits(), specConstants.getMaxDeposits());
   }
 
   @Override

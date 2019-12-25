@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.stream.RxUtil;
 import org.ethereum.beacon.util.Utils;
 import org.ethereum.beacon.wire.Feedback;
@@ -82,14 +83,14 @@ public class WireApiSyncRouter implements WireApiSync {
   }
 
   @Override
-  public CompletableFuture<Feedback<List<BeaconBlock>>> requestBlocks(
+  public CompletableFuture<Feedback<List<SignedBeaconBlock>>> requestBlocks(
       BlockRequestMessage requestMessage, ObjectHasher<Hash32> hasher) {
     logger.info("request blocks: {}", requestMessage);
     return submitAsyncTask(api -> api.requestBlocks(requestMessage, hasher));
   }
 
   @Override
-  public CompletableFuture<Feedback<List<BeaconBlock>>> requestRecentBlocks(List<Hash32> blockRoots,
+  public CompletableFuture<Feedback<List<SignedBeaconBlock>>> requestRecentBlocks(List<Hash32> blockRoots,
       ObjectHasher<Hash32> hasher) {
     return submitAsyncTask(api -> api.requestRecentBlocks(blockRoots, hasher));
   }

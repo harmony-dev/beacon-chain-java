@@ -14,6 +14,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositMessage;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -27,8 +28,6 @@ import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.util.BlsKeyPairGenerator;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.ssz.SSZBuilder;
-import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.config.SystemProperties;
 import org.ethereum.facade.Ethereum;
 import org.ethereum.solidity.compiler.CompilationResult.ContractMetadata;
@@ -383,10 +382,11 @@ public class StandaloneDepositContractTest {
               withdrawalCredentials,
               Gwei.castFrom(UInt64.valueOf(gweiAmount.longValue())),
               BLSSignature.ZERO);
+      DepositMessage depositMessage = DepositMessage.from(depositData);
       // Let signature be the result of bls_sign of the signing_root(deposit_data) with
       // domain=DOMAIN_DEPOSIT.
       MessageParameters messageParameters =
-          MessageParameters.create(spec.signing_root(depositData), SignatureDomains.DEPOSIT);
+          MessageParameters.create(spec.hash_tree_root(depositMessage), SignatureDomains.DEPOSIT);
       BLS381.Signature signature = BLS381.sign(messageParameters, keyPair);
 
       SolidityCallResult result =

@@ -1,14 +1,14 @@
 package org.ethereum.beacon.chain.eventbus.events;
 
-import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 public class BlockConsiderationDelayed extends AbstractBlockEvent {
 
-  public static BlockConsiderationDelayed wrap(BeaconBlock block) {
+  public static BlockConsiderationDelayed wrap(SignedBeaconBlock block) {
     return new BlockConsiderationDelayed(block);
   }
 
-  public BlockConsiderationDelayed(BeaconBlock block) {
+  public BlockConsiderationDelayed(SignedBeaconBlock block) {
     super(block);
   }
 }

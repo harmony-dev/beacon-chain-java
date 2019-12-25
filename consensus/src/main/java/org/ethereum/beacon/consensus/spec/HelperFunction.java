@@ -1,6 +1,16 @@
 package org.ethereum.beacon.consensus.spec;
 
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_ATTESTER;
+
 import com.google.common.collect.Ordering;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -10,8 +20,8 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
-import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.BeaconCommittee;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -30,17 +40,6 @@ import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_ATTESTER;
 
 /**
  * Helper functions.
@@ -68,8 +67,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
             emptyList(),
             emptyList(),
             getConstants());
-    return new BeaconBlock(
-        getConstants().getGenesisSlot(), Hash32.ZERO, Hash32.ZERO, body, BLSSignature.ZERO);
+    return new BeaconBlock(getConstants().getGenesisSlot(), Hash32.ZERO, Hash32.ZERO, body);
   }
 
   default BeaconBlockHeader get_block_header(BeaconBlock block) {
@@ -77,8 +75,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
         block.getSlot(),
         block.getParentRoot(),
         Hash32.ZERO,
-        hash_tree_root(block.getBody()),
-        BLSSignature.ZERO);
+        hash_tree_root(block.getBody()));
   }
 
   /*
@@ -193,6 +190,41 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
   default boolean is_active_validator(ValidatorRecord validator, EpochNumber epoch) {
     return validator.getActivationEpoch().lessEqual(epoch)
         && epoch.less(validator.getExitEpoch());
+  }
+
+  /*
+   def is_eligible_for_activation_queue(validator: Validator) -> bool:
+     """
+     Check if ``validator`` is eligible to be placed into the activation queue.
+     """
+     return (
+         validator.activation_eligibility_epoch == FAR_FUTURE_EPOCH
+         and validator.effective_balance == MAX_EFFECTIVE_BALANCE
+     )
+  */
+  default boolean is_eligible_for_activation_queue(ValidatorRecord validator) {
+    return validator.getActivationEligibilityEpoch().equals(getConstants().getFarFutureEpoch())
+        && validator.getEffectiveBalance().equals(getConstants().getMaxEffectiveBalance());
+  }
+
+  /*
+   def is_eligible_for_activation(state: BeaconState, validator: Validator) -> bool:
+   """
+   Check if ``validator`` is eligible for activation.
+   """
+   return (
+       # Placement in queue is finalized
+       validator.activation_eligibility_epoch <= state.finalized_checkpoint.epoch
+       # Has not yet been activated
+       and validator.activation_epoch == FAR_FUTURE_EPOCH
+   )
+  */
+  default boolean is_eligible_for_activation(BeaconState state, ValidatorRecord validator) {
+    return
+      // Placement in queue is finalized
+      validator.getActivationEligibilityEpoch().lessEqual(state.getFinalizedCheckpoint().getEpoch())
+      // Has not yet been activated
+      && validator.getActivationEpoch().equals(getConstants().getFarFutureEpoch());
   }
 
   /*
@@ -705,11 +737,6 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
     return getObjectHasher().getHash(object);
   }
 
-  /** Function for hashing self-signed objects */
-  default Hash32 signing_root(Object object) {
-    return getObjectHasher().getHashTruncateLast(object);
-  }
-
   /*
     def get_seed(state: BeaconState, epoch: Epoch, domain_type: DomainType) -> Hash:
       """
@@ -818,8 +845,12 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       return false;
     }
 
-    // Verify indices are sorted
+    // Verify indices are sorted and unique
     if (!Ordering.natural().isOrdered(indices)) {
+      return false;
+    }
+
+    if (indices.stream().distinct().count() < indices.size()) {
       return false;
     }
 

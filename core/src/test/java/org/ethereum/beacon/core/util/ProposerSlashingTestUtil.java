@@ -5,6 +5,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -24,15 +25,13 @@ public abstract class ProposerSlashingTestUtil {
   public static ProposerSlashing createRandom(Random random) {
     BeaconBlockHeader header1 =
         new BeaconBlockHeader(
-            SpecConstants.GENESIS_SLOT, Hash32.random(random), Hash32.random(random), Hash32.random(random),
-            BLSSignature.wrap(Bytes96.random(random)));
+            SpecConstants.GENESIS_SLOT, Hash32.random(random), Hash32.random(random), Hash32.random(random));
     BeaconBlockHeader header2 =
         new BeaconBlockHeader(
-            SpecConstants.GENESIS_SLOT, Hash32.random(random), Hash32.random(random), Hash32.random(random),
-            BLSSignature.wrap(Bytes96.random(random)));
+            SpecConstants.GENESIS_SLOT, Hash32.random(random), Hash32.random(random), Hash32.random(random));
     return new ProposerSlashing(
         ValidatorIndex.ZERO,
-        header1,
-        header2);
+        new SignedBeaconBlockHeader(header1, BLSSignature.wrap(Bytes96.random(random))),
+        new SignedBeaconBlockHeader(header2, BLSSignature.wrap(Bytes96.random(random))));
   }
 }

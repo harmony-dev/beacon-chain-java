@@ -11,7 +11,7 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
   private AttesterSlashingSerializer attesterSlashingSerializer;
   private AttestationSerializer attestationSerializer;
   private DepositSerializer depositSerializer;
-  private VoluntaryExitSerializer voluntaryExitSerializer;
+  private SignedVoluntaryExitSerializer signedVoluntaryExitSerializer;
 
   public BlockBodySerializer(com.fasterxml.jackson.databind.ObjectMapper mapper) {
     this.mapper = mapper;
@@ -20,7 +20,7 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
     this.attesterSlashingSerializer = new AttesterSlashingSerializer(mapper);
     this.attestationSerializer = new AttestationSerializer(mapper);
     this.depositSerializer = new DepositSerializer(mapper);
-    this.voluntaryExitSerializer = new VoluntaryExitSerializer(mapper);
+    this.signedVoluntaryExitSerializer = new SignedVoluntaryExitSerializer(mapper);
   }
 
   @Override
@@ -31,7 +31,7 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
   @Override
   public ObjectNode map(BeaconBlockBody instance) {
     ObjectNode blockBody = mapper.createObjectNode();
-    blockBody.put("randao_reveal", instance.getRandaoReveal().toString());
+    blockBody.put("randao_reveal", instance.getRandaoReveal().toHexString());
     blockBody.set("eth1_data", eth1DataSerializer.map(instance.getEth1Data()));
     blockBody.put("graffiti", instance.getGraffiti().toString());
     ArrayNode proposerSlashingNode = mapper.createArrayNode();
@@ -47,7 +47,7 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
     instance.getDeposits().stream().map(o -> depositSerializer.map(o)).forEachOrdered(depositsNode::add);
     blockBody.set("deposits", depositsNode);
     ArrayNode voluntaryExitsNode = mapper.createArrayNode();
-    instance.getVoluntaryExits().stream().map(o -> voluntaryExitSerializer.map(o)).forEachOrdered(voluntaryExitsNode::add);
+    instance.getVoluntaryExits().stream().map(o -> signedVoluntaryExitSerializer.map(o)).forEachOrdered(voluntaryExitsNode::add);
     blockBody.set("voluntary_exits", voluntaryExitsNode);
     return blockBody;
   }

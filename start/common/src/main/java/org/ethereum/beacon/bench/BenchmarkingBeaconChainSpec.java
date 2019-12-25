@@ -114,11 +114,6 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public Hash32 signing_root(Object object) {
-    return callAndTrack("signing_root", () -> super.signing_root(object));
-  }
-
-  @Override
   public List<ValidatorIndex> get_beacon_committee(
       BeaconState state, SlotNumber slot, CommitteeIndex index) {
     return callAndTrack(

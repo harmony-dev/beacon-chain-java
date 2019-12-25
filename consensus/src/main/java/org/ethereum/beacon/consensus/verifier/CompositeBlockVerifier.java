@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 
 /**
  * Aggregates a number of block verifiers.
@@ -24,7 +25,7 @@ public class CompositeBlockVerifier implements BeaconBlockVerifier {
   }
 
   @Override
-  public VerificationResult verify(BeaconBlock block, BeaconState state) {
+  public VerificationResult verify(SignedBeaconBlock block, BeaconState state) {
     for (BeaconBlockVerifier verifier : verifiers) {
       VerificationResult result = verifier.verify(block, state);
       if (result != PASSED) {

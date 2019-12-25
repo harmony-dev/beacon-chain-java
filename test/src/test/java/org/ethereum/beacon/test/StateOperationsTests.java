@@ -12,6 +12,7 @@ import org.junit.Test;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+
 public class StateOperationsTests extends TestUtils {
   private Path SUBDIR = Paths.get("phase0", "operations");
 

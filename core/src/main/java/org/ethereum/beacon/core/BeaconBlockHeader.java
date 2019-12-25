@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -23,28 +22,20 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class BeaconBlockHeader implements Hashable<Hash32> {
 
   public static final BeaconBlockHeader EMPTY =
-      new BeaconBlockHeader(
-          SlotNumber.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO, BLSSignature.ZERO);
+      new BeaconBlockHeader(SlotNumber.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO);
 
   @SSZ private final SlotNumber slot;
   @SSZ private final Hash32 parentRoot;
   @SSZ private final Hash32 stateRoot;
   @SSZ private final Hash32 bodyRoot;
-  @SSZ private final BLSSignature signature;
 
   private Hash32 hashCache = null;
 
-  public BeaconBlockHeader(
-      SlotNumber slot,
-      Hash32 parentRoot,
-      Hash32 stateRoot,
-      Hash32 bodyRoot,
-      BLSSignature signature) {
+  public BeaconBlockHeader(SlotNumber slot, Hash32 parentRoot, Hash32 stateRoot, Hash32 bodyRoot) {
     this.slot = slot;
     this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
     this.bodyRoot = bodyRoot;
-    this.signature = signature;
   }
 
   public SlotNumber getSlot() {
@@ -63,12 +54,8 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
     return bodyRoot;
   }
 
-  public BLSSignature getSignature() {
-    return signature;
-  }
-
   public BeaconBlockHeader withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlockHeader(slot, parentRoot, stateRoot, bodyRoot, signature);
+    return new BeaconBlockHeader(slot, parentRoot, stateRoot, bodyRoot);
   }
 
   @Override
@@ -80,6 +67,7 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
   public void setHash(Hash32 hash) {
     this.hashCache = hash;
   }
+
   @Override
   public boolean equals(Object object) {
     if (this == object) {
@@ -92,13 +80,12 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
     return Objects.equal(slot, that.slot)
         && Objects.equal(parentRoot, that.parentRoot)
         && Objects.equal(stateRoot, that.stateRoot)
-        && Objects.equal(bodyRoot, that.bodyRoot)
-        && Objects.equal(signature, that.signature);
+        && Objects.equal(bodyRoot, that.bodyRoot);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(slot, parentRoot, stateRoot, bodyRoot, signature);
+    return Objects.hashCode(slot, parentRoot, stateRoot, bodyRoot);
   }
 
   @Override
@@ -112,19 +99,25 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
     return "BlockHeader[" + toStringPriv(constants, hasher) + "]:\n";
   }
 
-  public String toString(@Nullable SpecConstants constants,
+  public String toString(
+      @Nullable SpecConstants constants,
       @Nullable Function<? super BeaconBlockHeader, Hash32> hasher) {
     return (hasher == null ? "?" : hasher.apply(this).toStringShort())
-        + " <~ " + parentRoot.toStringShort();
+        + " <~ "
+        + parentRoot.toStringShort();
   }
 
-  private String toStringPriv(@Nullable SpecConstants constants,
+  private String toStringPriv(
+      @Nullable SpecConstants constants,
       @Nullable Function<? super Hashable<Hash32>, Hash32> hasher) {
     return (hasher == null ? "?" : hasher.apply(this).toStringShort())
-        + " <~ " + parentRoot.toStringShort()
-        + ", @slot " + slot.toStringNumber(constants)
-        + ", state=" + stateRoot.toStringShort()
-        + ", body=" + bodyRoot.toStringShort()
-        + ", sig=" + signature;
+        + " <~ "
+        + parentRoot.toStringShort()
+        + ", @slot "
+        + slot.toStringNumber(constants)
+        + ", state="
+        + stateRoot.toStringShort()
+        + ", body="
+        + bodyRoot.toStringShort();
   }
 }

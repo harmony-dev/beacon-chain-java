@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
@@ -29,7 +30,7 @@ public class PendingOperationsTestUtil {
       List<Attestation> aggregateAttestations,
       List<ProposerSlashing> proposerSlashings,
       List<AttesterSlashing> attesterSlashings,
-      List<VoluntaryExit> voluntaryExits) {
+      List<SignedVoluntaryExit> voluntaryExits) {
     PendingOperations pendingOperations = Mockito.mock(PendingOperations.class);
     when(pendingOperations.getAttestations()).thenReturn(attestations);
     when(pendingOperations.peekProposerSlashings(anyInt())).thenReturn(proposerSlashings);

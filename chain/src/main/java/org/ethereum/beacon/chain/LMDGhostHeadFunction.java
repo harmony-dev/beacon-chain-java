@@ -11,6 +11,7 @@ import org.ethereum.beacon.consensus.spec.ForkChoice.LatestMessage;
 import org.ethereum.beacon.consensus.spec.ForkChoice.Store;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -115,7 +116,7 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
       @Override
       public Optional<BeaconBlock> getBlock(Hash32 root) {
-        return chainStorage.getBlockStorage().get(root);
+        return chainStorage.getBlockStorage().get(root).map(SignedBeaconBlock::getMessage);
       }
 
       @Override
@@ -125,7 +126,8 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
       @Override
       public Optional<BeaconState> getState(Hash32 root) {
-        return chainStorage.getStateStorage().get(root);
+        return chainStorage.getBlockStorage().get(root)
+            .flatMap(block -> chainStorage.getStateStorage().get(block.getMessage().getStateRoot()));
       }
 
       @Override
@@ -146,13 +148,13 @@ public class LMDGhostHeadFunction implements HeadFunction {
       @Override
       public List<Hash32> getChildren(Hash32 root) {
         return chainStorage.getBlockStorage().getChildren(root, SEARCH_LIMIT).stream()
-            .map(spec::signing_root).collect(Collectors.toList());
+            .map(spec::hash_tree_root).collect(Collectors.toList());
       }
     });
 
     // Forcing get() call is save here as
     // it's been checked above that this particular root matches to a block
-    return chainStorage.getBlockStorage().get(headRoot).get();
+    return chainStorage.getBlockStorage().get(headRoot).get().getMessage();
   }
 
   /**

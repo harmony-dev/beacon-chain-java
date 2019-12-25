@@ -3,6 +3,7 @@ package org.ethereum.beacon.chain.observer;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.core.envelops.SignedVoluntaryExit;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
@@ -38,7 +39,7 @@ public class NaivePendingOperations implements PendingOperations {
   }
 
   @Override
-  public List<VoluntaryExit> peekExits(int maxCount) {
+  public List<SignedVoluntaryExit> peekExits(int maxCount) {
     return Collections.emptyList();
   }
 }

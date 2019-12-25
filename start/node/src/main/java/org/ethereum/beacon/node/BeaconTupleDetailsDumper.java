@@ -3,8 +3,8 @@ package org.ethereum.beacon.node;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.IOException;
@@ -19,14 +19,14 @@ import java.util.stream.Collectors;
 
 public class BeaconTupleDetailsDumper {
   private final String dir;
-  private final Function<BeaconBlock, BytesValue> blockSerializer;
+  private final Function<SignedBeaconBlock, BytesValue> blockSerializer;
   private final Function<BeaconState, BytesValue> stateSerializer;
 
   private AtomicInteger currentBlock = new AtomicInteger(0);
 
   public BeaconTupleDetailsDumper(String dir, SerializerFactory serializerFactory) {
     this.dir = dir;
-    this.blockSerializer = serializerFactory.getSerializer(BeaconBlock.class);
+    this.blockSerializer = serializerFactory.getSerializer(SignedBeaconBlock.class);
     this.stateSerializer = serializerFactory.getSerializer(BeaconState.class);
   }
 
@@ -55,7 +55,7 @@ public class BeaconTupleDetailsDumper {
         stateSerializer.apply(state).extractArray());
   }
 
-  public void dumpBlock(String fileName, BeaconBlock block) throws IOException {
+  public void dumpBlock(String fileName, SignedBeaconBlock block) throws IOException {
     Files.write(
         Paths.get(dir, fileName + ".ssz"), blockSerializer.apply(block).extractArray());
   }
@@ -63,7 +63,7 @@ public class BeaconTupleDetailsDumper {
   public void dump(BeaconTupleDetails beaconTupleDetails) throws IOException {
     Optional<BeaconStateEx> preState = beaconTupleDetails.getPostSlotState();
     Optional<BeaconStateEx> postState = beaconTupleDetails.getPostBlockState();
-    BeaconBlock block = beaconTupleDetails.getBlock();
+    SignedBeaconBlock block = beaconTupleDetails.getSignedBlock();
 
     if (preState.isPresent() && postState.isPresent()) {
       String num = Integer.toString(currentBlock.incrementAndGet());

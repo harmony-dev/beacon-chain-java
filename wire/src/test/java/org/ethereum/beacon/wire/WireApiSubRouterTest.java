@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.util.TestDataFactory;
 import org.ethereum.beacon.wire.WireApiSubRouterTest.TestRouter.Connection;
@@ -43,7 +44,7 @@ public class WireApiSubRouterTest {
     FluxSink<WireApiSub> removeSink;
     WireApiSubRouter router;
 
-    List<BeaconBlock> receivedBlocks = new ArrayList<>();
+    List<SignedBeaconBlock> receivedBlocks = new ArrayList<>();
     List<Attestation> receivedAttestations = new ArrayList<>();
 
     public TestRouter() {
@@ -75,37 +76,37 @@ public class WireApiSubRouterTest {
   public void test1() {
     TestDataFactory dataFactory = new TestDataFactory();
     TestRouter router1 = new TestRouter();
-    router1.router.sendProposedBlock(dataFactory.createBeaconBlock());
+    router1.router.sendProposedBlock(dataFactory.createSignedBeaconBlock());
     Assert.assertTrue(router1.receivedBlocks.isEmpty());
 
     TestRouter router2 = new TestRouter();
     Connection connection1 = router1.connect(router2);
 
-    router1.router.sendProposedBlock(dataFactory.createBeaconBlock(fromHexString("01")));
+    router1.router.sendProposedBlock(dataFactory.createSignedBeaconBlock(fromHexString("01")));
     Assert.assertTrue(router1.receivedBlocks.isEmpty());
     Assert.assertEquals(1, router2.receivedBlocks.size());
 
-    router1.router.sendProposedBlock(dataFactory.createBeaconBlock(fromHexString("02")));
+    router1.router.sendProposedBlock(dataFactory.createSignedBeaconBlock(fromHexString("02")));
     Assert.assertTrue(router1.receivedBlocks.isEmpty());
     Assert.assertEquals(2, router2.receivedBlocks.size());
 
-    router1.router.sendProposedBlock(dataFactory.createBeaconBlock(fromHexString("01")));
+    router1.router.sendProposedBlock(dataFactory.createSignedBeaconBlock(fromHexString("01")));
     Assert.assertTrue(router1.receivedBlocks.isEmpty());
     Assert.assertEquals(2, router2.receivedBlocks.size());
 
-    connection1.outerApi2.sendProposedBlock(dataFactory.createBeaconBlock(fromHexString("01")));
+    connection1.outerApi2.sendProposedBlock(dataFactory.createSignedBeaconBlock(fromHexString("01")));
     Assert.assertEquals(2, router2.receivedBlocks.size());
 
     connection1.disconnect();
     router2.clear();
 
-    router1.router.sendProposedBlock(dataFactory.createBeaconBlock(fromHexString("03")));
+    router1.router.sendProposedBlock(dataFactory.createSignedBeaconBlock(fromHexString("03")));
     Assert.assertTrue(router1.receivedBlocks.isEmpty());
     Assert.assertTrue(router2.receivedBlocks.isEmpty());
 
     Connection connection2 = router1.connect(router2);
 
-    router1.router.sendProposedBlock(dataFactory.createBeaconBlock(fromHexString("04")));
+    router1.router.sendProposedBlock(dataFactory.createSignedBeaconBlock(fromHexString("04")));
     Assert.assertTrue(router1.receivedBlocks.isEmpty());
     Assert.assertEquals(1, router2.receivedBlocks.size());
 
@@ -114,7 +115,7 @@ public class WireApiSubRouterTest {
     TestRouter router3 = new TestRouter();
     Connection connection3 = router2.connect(router3);
 
-    router1.router.sendProposedBlock(dataFactory.createBeaconBlock(fromHexString("05")));
+    router1.router.sendProposedBlock(dataFactory.createSignedBeaconBlock(fromHexString("05")));
     Assert.assertTrue(router1.receivedBlocks.isEmpty());
     Assert.assertEquals(1, router2.receivedBlocks.size());
     Assert.assertEquals(1, router3.receivedBlocks.size());

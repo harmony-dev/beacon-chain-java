@@ -71,7 +71,7 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(spec.get_current_epoch(state), data.getTarget().getEpoch());
     Assert.assertEquals(committeeIndex, data.getIndex());
     Assert.assertEquals(
-        spec.signing_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
+        spec.hash_tree_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(
         new Checkpoint(spec.get_current_epoch(state), targetRoot), data.getTarget());
 
