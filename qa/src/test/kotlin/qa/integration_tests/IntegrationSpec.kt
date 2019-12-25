@@ -1,5 +1,7 @@
 package qa.integration_tests
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.kotlintest.Description
 import io.kotlintest.TestCase
 import io.kotlintest.specs.AnnotationSpec
@@ -12,6 +14,8 @@ import org.ethereum.beacon.start.common.Launcher
 import qa.ObservableStates
 import qa.Tester
 import tech.pegasys.artemis.ethereum.core.Hash32
+import java.io.File
+import java.nio.file.Paths
 import java.util.*
 
 interface TestBase {
@@ -60,5 +64,19 @@ open class IntegrationSpec: AnnotationSpec(), TestBase {
   override fun beforeTest(testCase: TestCase) {
     testName = testCase.name
     super.beforeTest(testCase)
+  }
+
+  @AfterEach
+  fun dumpEvents() {
+    if (tester.recordEvents) {
+      val mapper = ObjectMapper(YAMLFactory())
+
+      val ts = TestScenario(/*tester.spec.constants, */
+          tester.genesisState.validators.listCopy().size, tester.events
+      )
+
+      println(Paths.get(".").toAbsolutePath())
+      File("$testName.yaml").writeText(mapper.writeValueAsString(ts))
+    }
   }
 }
