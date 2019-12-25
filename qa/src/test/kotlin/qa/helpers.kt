@@ -15,8 +15,9 @@ import org.ethereum.beacon.consensus.transition.BeaconStateExImpl
 import org.ethereum.beacon.consensus.util.PseudoBLSFunctions.pseudoSign
 import org.ethereum.beacon.core.BeaconBlock
 import org.ethereum.beacon.core.BeaconBlockBody
-import org.ethereum.beacon.core.BeaconBlockHeader
 import org.ethereum.beacon.core.BeaconState
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock
+import org.ethereum.beacon.core.envelops.SignedBeaconBlockHeader
 import org.ethereum.beacon.core.operations.Attestation
 import org.ethereum.beacon.core.spec.SignatureDomains
 import org.ethereum.beacon.core.state.Checkpoint
@@ -61,21 +62,26 @@ import kotlin.collections.HashSet
 fun createSigner(key: Bytes48) = BLS381MessageSigner { messageHash, domain -> BLSSignature.wrap(pseudoSign(key, messageHash, domain)) }
 
 class TestWire() : WireApiSub {
-  val blockProc = DirectProcessor.create<BeaconBlock>()
+  val blockProc = DirectProcessor.create<SignedBeaconBlock>()
   val blockProcSink = blockProc.sink()
 
   val attProc = DirectProcessor.create<Attestation>()
   val attProcSink = attProc.sink()
 
-  override fun sendProposedBlock(block: BeaconBlock) {}
+  override fun sendProposedBlock(block: SignedBeaconBlock) {}
   override fun sendAttestation(attestation: Attestation) {}
-  override fun inboundBlocksStream(): Publisher<BeaconBlock> {
+  override fun inboundBlocksStream(): Publisher<SignedBeaconBlock> {
     return blockProc
   }
 
   override fun inboundAttestationsStream(): Publisher<Attestation> {
     return attProc
   }
+}
+
+/** Dummy SignedBeaconBlock with absent signature (when it cannot be recovered).*/
+class DummySignedBeaconBlock(block: BeaconBlock): SignedBeaconBlock(block, null) {
+  override fun getSignature(): BLSSignature = throw IllegalStateException()
 }
 
 object ObservableStates {
@@ -171,15 +177,15 @@ class Tester(contract: EmulatorContract, val recordEvents: Boolean = true) {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
               }
 
-              override fun put(item: BeaconBlock?) {
+              override fun put(item: SignedBeaconBlock?) {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
               }
 
-              override fun put(key: Hash32, value: BeaconBlock) {
+              override fun put(key: Hash32, value: SignedBeaconBlock) {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
               }
 
-              override fun getChildren(parent: Hash32?, limit: Int): MutableList<BeaconBlock> {
+              override fun getChildren(parent: Hash32?, limit: Int): MutableList<SignedBeaconBlock> {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
               }
 
@@ -187,8 +193,8 @@ class Tester(contract: EmulatorContract, val recordEvents: Boolean = true) {
                 TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
               }
 
-              override fun get(key: Hash32): Optional<BeaconBlock> {
-                return testLauncher.store.getBlock(key)
+              override fun get(key: Hash32): Optional<SignedBeaconBlock> {
+                return testLauncher.store.getBlock(key).map(::DummySignedBeaconBlock)
               }
 
               override fun flush() {
@@ -214,15 +220,16 @@ class Tester(contract: EmulatorContract, val recordEvents: Boolean = true) {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
           }
 
-          override fun getBlockHeaderStorage(): DataSource<Hash32, BeaconBlockHeader> {
+          override fun getBlockHeaderStorage(): DataSource<Hash32, SignedBeaconBlockHeader> {
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
           }
 
         }
     }
+
   val blockStorage get() = chainStorage.blockStorage
   val stateStorage get() = chainStorage.stateStorage
-  fun root(a: Any?): Hash32 = spec.signing_root(a)
+  fun root(a: BeaconBlock?): Hash32 = spec.hash_tree_root(a)
 
   private var _genesisState: BeaconState? = null
   val genesisState get() = _genesisState!!
@@ -277,7 +284,7 @@ class Store(val storage: BeaconChainStorage) {
     return if (root in cache) {
       Optional.ofNullable(cache[root])
     } else {
-      storage.blockStorage.get(root)
+      storage.blockStorage.get(root).map { it.message }
     }
   }
 
@@ -300,7 +307,7 @@ class TestChain(val tester: Tester) {
     get() {
       val state = ObservableStates.data[tester.testLauncher] //tester.testLauncher.beaconChain.recentlyProcessed
       if (state != null)
-        return BeaconTuple.of(state.head, state.latestSlotState)
+        return BeaconTuple.of(DummySignedBeaconBlock(state.head), state.latestSlotState)
       else
         throw IllegalStateException("No state")
     }
@@ -330,10 +337,10 @@ class TestChain(val tester: Tester) {
     return pBlock
   }
 
-  fun sendBlock(block: BeaconBlock) {
+  fun sendBlock(block: SignedBeaconBlock) {
     tester.wireApi.blockProcSink.next(block)
     if (tester.recordEvents)
-      tester.events.add(BlockEvent(StateTestUtils.serializeBlock(block)))
+      tester.events.add(BlockEvent(StateTestUtils.serializeSignedBlock(block)))
   }
 
   fun sendAttestation(attestation: Attestation) {
@@ -350,7 +357,7 @@ class TestChain(val tester: Tester) {
 
   fun proposeBlock(slot: Int, parent: BeaconTuple? = null, attestations: List<Attestation>? = null): BeaconTuple {
     val block = mkBlock(slot, parent, attestations)
-    sendBlock(block.block)
+    sendBlock(block.signedBlock)
     return block
   }
 
@@ -392,7 +399,7 @@ class TestChain(val tester: Tester) {
         if (vi !in validatorsSet)
           continue
         val a = attester.attest(vi, committee.index, currState,
-            tupleToAttest.block)
+            tupleToAttest.signedBlock.message)
 
         val b = if (postProcess != null) postProcess(a) else a
 
@@ -418,7 +425,7 @@ class TestChain(val tester: Tester) {
                                attestations: List<Attestation> = Collections.emptyList(),
                                postProcess: ((BeaconBlock) -> BeaconBlock)? = null): BeaconTuple {
     val slotNumber = SlotNumber.of(slot)
-    val parentRoot = spec.signing_root(parent.block)
+    val parentRoot = spec.hash_tree_root(parent.signedBlock.message)
 
     val preState = parent.state.createMutableCopy()
     spec.process_slots(preState, slotNumber)
@@ -451,7 +458,7 @@ class TestChain(val tester: Tester) {
 
     val parentState = BeaconStateExImpl(spec.state_transition(
         slotState.createMutableCopy(),
-        block, false).createImmutable(), TransitionType.BLOCK)
+        SignedBeaconBlock(block, BLSSignature.ZERO), false).createImmutable(), TransitionType.BLOCK)
     //println(parentState.toString())
 
     val newBlock = block.withStateRoot(spec.hash_tree_root(parentState))!!

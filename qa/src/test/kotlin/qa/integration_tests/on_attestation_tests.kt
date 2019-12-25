@@ -275,7 +275,7 @@ class OnAttestationTests : IntegrationSpec() {
     testChain.addHeadCheck(block1.block)
     tester.testLauncher.lastObservableState.head shouldBe block1.block
 
-    testChain.sendBlock(block2.block)
+    testChain.sendBlock(block2.signedBlock)
     testChain.addHeadCheck(block2.block)
     tester.testLauncher.lastObservableState.head shouldBe block2.block
   }

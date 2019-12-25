@@ -407,13 +407,24 @@ public abstract class StateTestUtils {
     return eth1;
   }
 
+  public static BeaconStateData.BlockHeaderData serializeSignedBeaconBlockHeader(SignedBeaconBlockHeader header) {
+    BeaconStateData.BlockHeaderData data = serializeBeaconBlockHeader(header.getMessage());
+    data.setSignature(header.getSignature().toHexString());
+    return data;
+  }
+
   public static BeaconStateData.BlockHeaderData serializeBeaconBlockHeader(BeaconBlockHeader header) {
     BeaconStateData.BlockHeaderData data = new BeaconStateData.BlockHeaderData();
     data.setSlot(header.getSlot().toStringNumber(null));
     data.setParentRoot(header.getParentRoot().toString());
     data.setStateRoot(header.getStateRoot().toString());
     data.setParentRoot(header.getBodyRoot().toString());
-    data.setSignature(header.getSignature().toHexString());
+    return data;
+  }
+
+  public static BlockData serializeSignedBlock(SignedBeaconBlock block) {
+    BlockData data = serializeBlock(block.getMessage());
+    data.setSignature(block.getSignature().toHexString());
     return data;
   }
 
@@ -440,7 +451,7 @@ public abstract class StateTestUtils {
             .collect(Collectors.toList()));
     blockBodyData.setVoluntaryExits(
         block.getBody().getVoluntaryExits().stream()
-            .map(StateTestUtils::serializeVoluntaryExit)
+            .map(StateTestUtils::serializeSignedVoluntaryExit)
             .collect(Collectors.toList()));
 
     BlockData blockData = new BlockData();
@@ -448,7 +459,6 @@ public abstract class StateTestUtils {
     blockData.setParentRoot(block.getParentRoot().toString());
     blockData.setStateRoot(block.getStateRoot().toString());
     blockData.setBody(blockBodyData);
-    blockData.setSignature(block.getSignature().toHexString());
 
     return blockData;
   }
@@ -480,13 +490,20 @@ public abstract class StateTestUtils {
 
   @NotNull
   public static BlockData.BlockBodyData.ProposerSlashingData serializeProposerSlashing(ProposerSlashing proposerSlashing) {
-    BeaconStateData.BlockHeaderData blockHeaderData1 = serializeBeaconBlockHeader(proposerSlashing.getHeader1());
-    BeaconStateData.BlockHeaderData blockHeaderData2 = serializeBeaconBlockHeader(proposerSlashing.getHeader2());
+    BeaconStateData.BlockHeaderData blockHeaderData1 = serializeSignedBeaconBlockHeader(proposerSlashing.getSignedHeader1());
+    BeaconStateData.BlockHeaderData blockHeaderData2 = serializeSignedBeaconBlockHeader(proposerSlashing.getSignedHeader2());
     BlockData.BlockBodyData.ProposerSlashingData proposerSlashingData = new BlockData.BlockBodyData.ProposerSlashingData();
     proposerSlashingData.setProposerIndex(proposerSlashing.getProposerIndex().getValue());
     proposerSlashingData.setHeader1(blockHeaderData1);
     proposerSlashingData.setHeader2(blockHeaderData2);
     return proposerSlashingData;
+  }
+
+  public static BlockData.BlockBodyData.VoluntaryExitData serializeSignedVoluntaryExit(
+      SignedVoluntaryExit voluntaryExit) {
+    BlockData.BlockBodyData.VoluntaryExitData data = serializeVoluntaryExit(voluntaryExit.getMessage());
+    data.setSignature(voluntaryExit.getSignature().toHexString());
+    return data;
   }
 
   public static BlockData.BlockBodyData.VoluntaryExitData serializeVoluntaryExit(
@@ -495,7 +512,6 @@ public abstract class StateTestUtils {
 
     data.setEpoch(voluntaryExit.getEpoch().toString());
     data.setValidatorIndex(voluntaryExit.getValidatorIndex().getValue());
-    data.setSignature(voluntaryExit.getSignature().toHexString());
 
     return data;
   }

@@ -44,7 +44,7 @@ class TestExecutor() : AnnotationSpec(), TestBase {
     for(step in testScenario.steps) {
       when(step) {
         is SlotEvent -> tester.currentSlot = SlotNumber(step.slot)
-        is BlockEvent -> testChain.sendBlock(StateTestUtils.parseBlockData(step.block, tester.spec.constants))
+        is BlockEvent -> testChain.sendBlock(StateTestUtils.parseSignedBlockData(step.block, tester.spec.constants))
         is AttestationEvent -> testChain.sendAttestation(StateTestUtils.parseAttestation(step.attestation, tester.spec.constants))
         is CheckEvent -> {
           for(check in step.checks.entries) {

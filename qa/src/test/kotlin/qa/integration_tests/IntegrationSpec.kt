@@ -5,6 +5,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import io.kotlintest.Description
 import io.kotlintest.TestCase
 import io.kotlintest.specs.AnnotationSpec
+import org.ethereum.beacon.chain.BeaconTuple
+import org.ethereum.beacon.core.BeaconBlock
 import org.ethereum.beacon.core.operations.attestation.AttestationData
 import org.ethereum.beacon.core.state.Checkpoint
 import org.ethereum.beacon.core.types.CommitteeIndex
@@ -21,6 +23,7 @@ import java.util.*
 interface TestBase {
   val genesisTime get() = Date(2019, 8, 24, 0, 0, 0).time
   val Launcher.lastObservableState get() = ObservableStates.data[this]!!
+  val BeaconTuple.block: BeaconBlock get() = this.signedBlock.message
 }
 
 open class IntegrationSpec: AnnotationSpec(), TestBase {

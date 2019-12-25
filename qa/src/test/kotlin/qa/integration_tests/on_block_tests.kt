@@ -4,6 +4,7 @@ import io.kotlintest.shouldBe
 import io.kotlintest.shouldNotBe
 import org.ethereum.beacon.chain.BeaconTuple
 import org.ethereum.beacon.core.BeaconBlock
+import org.ethereum.beacon.core.envelops.SignedBeaconBlock
 import org.ethereum.beacon.core.types.BLSSignature
 import org.ethereum.beacon.core.types.SlotNumber
 import qa.Store
@@ -63,7 +64,7 @@ class OnBlockTests: IntegrationSpec() {
 
         checkNoFinalizedAncestor(testChain, pBlock)
 
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
 
         testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
@@ -75,10 +76,10 @@ class OnBlockTests: IntegrationSpec() {
         val finRoot = storage.finalizedStorage.get().get().root
 
         val block = pBlock.block
-        val root = testChain.tester.spec.signing_root(block)
+        val root = testChain.tester.root(block)
         store.put(root, block)
 
-        val ancestorRoot = store.getAncestor(root, store.storage.blockStorage.get(finRoot).get().slot)
+        val ancestorRoot = store.getAncestor(root, store.storage.blockStorage.get(finRoot).get().message.slot)
         // test validity precondition
         ancestorRoot shouldNotBe finRoot
     }
@@ -110,7 +111,7 @@ class OnBlockTests: IntegrationSpec() {
 
         checkNoFinalizedAncestor(testChain, pBlock)
 
-        tester.wireApi.blockProcSink.next(pBlock.block)
+        tester.wireApi.blockProcSink.next(pBlock.signedBlock)
         testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
@@ -141,7 +142,7 @@ class OnBlockTests: IntegrationSpec() {
 
         checkNoFinalizedAncestor(testChain, pBlock)
 
-        tester.wireApi.blockProcSink.next(pBlock.block)
+        tester.wireApi.blockProcSink.next(pBlock.signedBlock)
         testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
@@ -154,7 +155,7 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(1)
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
@@ -167,7 +168,7 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(2)
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
@@ -180,10 +181,10 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(2)
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
@@ -196,14 +197,14 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(2)
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
         tester.currentSlot = SlotNumber(3)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
@@ -216,7 +217,7 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(3)
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
 
@@ -233,7 +234,7 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(4)
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
 
@@ -256,7 +257,7 @@ class OnBlockTests: IntegrationSpec() {
         })
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
     }
@@ -271,7 +272,7 @@ class OnBlockTests: IntegrationSpec() {
         })
 
         tester.currentSlot = SlotNumber(2)
-        testChain.sendBlock(pBlock.block)
+        testChain.sendBlock(pBlock.signedBlock)
         testChain.addBlockCheck("!block_in_store", pBlock.block)
         tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
     }
@@ -283,12 +284,15 @@ class OnBlockTests: IntegrationSpec() {
         val testChain = TestChain(tester)
         val pBlock = testChain.mkBlock(2)
 
-        val block = BeaconBlock.Builder.fromBlock(pBlock.block).withSignature(BLSSignature.ZERO).build()
+        val block = SignedBeaconBlock(
+            BeaconBlock.Builder.fromBlock(pBlock.block).build(),
+            BLSSignature.ZERO
+        )
 
         tester.currentSlot = SlotNumber(2)
         testChain.sendBlock(block)
-        testChain.addBlockCheck("!block_in_store", pBlock.block)
-        tester.blockStorage[tester.root(block)].isPresent shouldBe  false
+        testChain.addBlockCheck("!block_in_store", block.message)
+        tester.blockStorage[tester.root(block.message)].isPresent shouldBe  false
     }
 
 }
